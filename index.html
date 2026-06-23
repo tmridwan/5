@@ -3,2135 +3,1006 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Alap — Client Panel v8</title>
-<!-- SheetJS for reliable Excel parsing -->
-<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-<script>
-// If primary CDN blocked, try unpkg fallback
-if (typeof XLSX === 'undefined') {
-  var s = document.createElement('script');
-  s.src = 'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js';
-  document.head.appendChild(s);
-}
-</script>
+<title>Alap — Admin Panel</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --bg:#0f0f0f;--bg2:#1a1a1a;--bg3:#252525;--bg4:#2e2e2e;
-  --text:#f0f0f0;--muted:#888;--border:#333;
-  --primary:#4f8ef7;--success:#4caf50;--error:#f44336;--warning:#ff9800;
-}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
 
-/* COLUMN SETTINGS MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:500;display:none}
-.modal-overlay.open{display:flex}
-.modal-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:28px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto}
-.modal-box h3{font-size:16px;margin-bottom:6px;color:var(--primary)}
-.modal-box p{font-size:12px;color:var(--muted);margin-bottom:18px}
-.col-setting-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;align-items:center}
-.col-setting-row label{font-size:12px;color:var(--muted)}
-.col-setting-row .col-input-wrap{display:flex;align-items:center;gap:6px}
-.col-setting-row .col-input-wrap input{flex:1;padding:7px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:13px}
-.col-setting-row .col-input-wrap input:focus{outline:none;border-color:var(--primary)}
-.col-toggle{width:36px;height:20px;border-radius:10px;background:var(--bg4);border:none;cursor:pointer;position:relative;transition:.2s;flex-shrink:0}
-.col-toggle.on{background:var(--primary)}
-.col-toggle::after{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:white;top:3px;left:3px;transition:.2s}
-.col-toggle.on::after{left:19px}
-.preset-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
-.preset-btn{padding:5px 10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);border-radius:4px;cursor:pointer;font-size:11px}
-/* ── NEW TAB STYLES ── */
-.order-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px}
-.order-card:hover{border-color:var(--primary)}
-.order-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.order-id{font-weight:700;color:var(--primary);font-size:13px}
-.order-meta{font-size:11px;color:var(--muted)}
-.order-items{font-size:12px;color:var(--text);margin:6px 0;line-height:1.6}
-.order-total{font-size:14px;font-weight:700;color:var(--success)}
-.order-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
-.status-badge{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase}
-.status-confirmed{background:#1e3a2f;color:var(--success)}
-.status-pending{background:#3a2e1e;color:var(--warning)}
-.status-dispatched{background:#1e2a3a;color:var(--primary)}
-.status-delivered{background:#1a1a1a;color:var(--muted)}
-.status-cancelled{background:#3a1e1e;color:var(--error)}
-.integration-group{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px}
-.integration-group h4{font-size:12px;font-weight:700;color:var(--primary);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px}
-.int-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
-.int-row label{font-size:11px;color:var(--muted);display:block;margin-bottom:3px}
-.int-row input{width:100%;padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:12px;font-family:monospace}
-.int-row input:focus{outline:none;border-color:var(--primary)}
-.profit-stat{background:var(--bg3);border-radius:8px;padding:16px;text-align:center}
-.profit-num{font-size:28px;font-weight:700;color:var(--success)}
-.profit-num.negative{color:var(--error)}
-.profit-label{font-size:11px;color:var(--muted);margin-top:4px}
-.expense-form{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:end}
-.broadcast-box{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px}
-.ocr-drop{border:2px dashed var(--border);border-radius:8px;padding:40px;text-align:center;cursor:pointer;transition:.2s}
-.ocr-drop:hover,.ocr-drop.drag{border-color:var(--primary);background:var(--bg3)}
-.ocr-result-row{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:6px;margin-bottom:6px;align-items:center;font-size:12px}
-.lead-card{background:var(--bg3);border-left:3px solid var(--warning);border-radius:0 6px 6px 0;padding:10px;margin-bottom:6px}
-.blacklist-row{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--bg3);border-radius:6px;margin-bottom:6px;font-size:12px}
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-.preset-btn:hover{border-color:var(--primary);color:var(--primary)}
+  :root {
+    --bg: #0d0f12;
+    --surface: #151820;
+    --surface2: #1c2029;
+    --border: #252a35;
+    --border2: #2e3545;
+    --text: #e8eaf0;
+    --muted: #7a8099;
+    --accent: #4f8ef7;
+    --accent-dim: #1e2d4a;
+    --green: #3ecf8e;
+    --green-dim: #122b1f;
+    --red: #f25c5c;
+    --red-dim: #2d1515;
+    --amber: #f5a623;
+    --amber-dim: #2d2010;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
 
-/* LOGIN */
-#login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);display:flex;align-items:center;justify-content:center;z-index:999}
-.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:40px;width:340px;text-align:center}
-.login-box h1{font-size:28px;margin-bottom:6px;color:var(--primary)}
-.login-box p{color:var(--muted);font-size:13px;margin-bottom:28px}
-.login-box input{width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;margin-bottom:12px}
-.login-box input:focus{outline:none;border-color:var(--primary)}
-.login-box button{width:100%;padding:11px;background:var(--primary);color:white;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;margin-top:4px}
-.login-box button:hover{background:#3a7de8}
-.login-error{color:var(--error);font-size:12px;margin-top:8px;display:none}
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+  }
 
-/* APP LAYOUT */
-#app{display:none}
-.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between}
-.topbar h1{font-size:18px;color:var(--primary);font-weight:700}
-.topbar-right{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--muted)}
-.topbar-right span{color:var(--text)}
-.topbar-right button{background:var(--bg3);border:1px solid var(--border);color:var(--muted);padding:5px 10px;border-radius:4px;cursor:pointer;font-size:12px}
-.layout{display:flex;min-height:calc(100vh - 52px)}
-.sidebar{width:180px;background:var(--bg2);border-right:1px solid var(--border);padding:12px}
-.nav-item{padding:9px 12px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--muted);margin-bottom:2px;transition:.15s}
-.nav-item:hover{background:var(--bg3);color:var(--text)}
-.nav-item.active{background:var(--primary);color:white}
-.content{flex:1;padding:24px;overflow-y:auto}
-.tab{display:none}.tab.active{display:block}
-h2{font-size:18px;font-weight:600;margin-bottom:16px}
-h3{font-size:14px;font-weight:600;margin-bottom:10px;color:var(--muted)}
+  .sidebar {
+    width: 220px;
+    min-height: 100vh;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem 1rem;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
 
-/* CARDS */
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px}
-.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
-.stat{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center}
-.stat-num{font-size:28px;font-weight:700;color:var(--primary)}
-.stat-label{font-size:11px;color:var(--muted);margin-top:4px}
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 0.5rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.5rem;
+  }
 
-/* BUTTONS */
-.btn{padding:7px 12px;border:none;border-radius:5px;cursor:pointer;font-size:13px;font-weight:500}
-.btn-primary{background:var(--primary);color:white}
-.btn-primary:hover{background:#3a7de8}
-.btn-sm{padding:5px 9px;font-size:12px}
-.btn-ghost{background:var(--bg3);border:1px solid var(--border);color:var(--text)}
-.btn-ghost:hover{background:var(--bg4)}
-.btn-danger{background:#3d1515;border:1px solid #6b2020;color:#f87171}
-.btn-danger:hover{background:#6b2020}
-.btn-success{background:#1a3d1f;border:1px solid #2d6a35;color:#6ee07a}
-.btn-success:hover{background:#2d6a35}
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
 
-/* TABLE */
-.tbl{width:100%;border-collapse:collapse;font-size:13px}
-.tbl th{background:var(--bg3);padding:9px 10px;text-align:left;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)}
-.tbl td{padding:9px 10px;border-bottom:1px solid var(--border)}
-.tbl tr:last-child td{border-bottom:none}
-.tbl tr:hover td{background:var(--bg3)}
-.badge{display:inline-block;padding:3px 7px;border-radius:3px;font-size:11px;font-weight:600}
-.badge-in{background:#1a3d1f;color:#6ee07a}
-.badge-low{background:#3d2e0a;color:#fbbf24}
-.badge-out{background:#3d1515;color:#f87171}
+  .logo-text {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
 
-/* EXCEL MAPPER */
-.mapper{background:var(--bg2);border:1px solid var(--primary);border-radius:8px;padding:16px;margin-bottom:16px;display:none}
-.mapper h3{color:var(--primary);margin-bottom:12px}
-.map-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-.map-field label{font-size:11px;color:var(--muted);display:block;margin-bottom:4px;font-weight:600}
-.map-field select{width:100%;padding:7px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px}
-.map-field select:focus{outline:none;border-color:var(--primary)}
-.preview-box{overflow-x:auto;border:1px solid var(--border);border-radius:6px;margin-bottom:12px}
-.preview-box table{width:100%;border-collapse:collapse;font-size:11px}
-.preview-box th{background:var(--bg3);padding:6px 8px;text-align:left;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border)}
-.preview-box td{padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text)}
-.preview-box tr:last-child td{border-bottom:none}
-.mapper-actions{display:flex;gap:8px}
+  .logo-text span {
+    color: var(--accent);
+  }
 
-/* FORM INPUTS */
-input[type=text],input[type=number],select,textarea{
-  background:var(--bg3);border:1px solid var(--border);border-radius:5px;
-  color:var(--text);padding:7px 10px;font-size:13px
-}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary)}
-textarea{resize:vertical}
+  .nav-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0 0.5rem;
+    margin-bottom: 0.5rem;
+  }
 
-/* ALERTS */
-.alert-bar{background:#3d2e0a;border:1px solid #6b4f0a;border-radius:6px;padding:10px 12px;margin-bottom:8px;font-size:12px;color:#fbbf24}
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0.55rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    margin-bottom: 2px;
+  }
 
-/* QA ITEM */
-.qa-item{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:8px}
-.qa-q{color:var(--primary);font-weight:600;font-size:13px;margin-bottom:4px}
-.qa-a{font-size:13px;color:var(--text);margin-bottom:8px}
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: var(--accent-dim); color: var(--accent); }
 
-/* TOAST */
-.toast{position:fixed;bottom:20px;right:20px;padding:11px 16px;border-radius:6px;font-size:13px;font-weight:500;z-index:9999;animation:slideUp .3s ease}
-.toast-success{background:#1a3d1f;border:1px solid #2d6a35;color:#6ee07a}
-.toast-error{background:#3d1515;border:1px solid #6b2020;color:#f87171}
-.toast-warn{background:#3d2e0a;border:1px solid #6b4f0a;color:#fbbf24}
-@keyframes slideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}
+  .sidebar-bottom {
+    margin-top: auto;
+    border-top: 1px solid var(--border);
+    padding-top: 1rem;
+  }
 
-/* UPLOAD ZONE */
-.upload-zone{border:2px dashed var(--border);border-radius:8px;padding:20px;text-align:center;cursor:pointer;transition:.2s}
-.upload-zone:hover{border-color:var(--primary);background:rgba(79,142,247,.05)}
-.upload-zone input{display:none}
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    display: inline-block;
+    margin-right: 6px;
+  }
 
-/* EMPTY STATE */
-.empty{text-align:center;padding:40px;color:var(--muted)}
-.empty-icon{font-size:40px;margin-bottom:10px;opacity:.4}
+  .main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 2rem 2.5rem;
+    max-width: 1100px;
+  }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .page-header {
+    margin-bottom: 2rem;
+  }
+
+  .page-header h1 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+    margin-bottom: 4px;
+  }
+
+  .page-header p {
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .stat-value {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+
+  .stat-value.green { color: var(--green); }
+  .stat-value.accent { color: var(--accent); }
+  .stat-value.amber { color: var(--amber); }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .card-title {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .table-wrap { overflow-x: auto; max-height: 500px; overflow-y: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  th {
+    text-align: left;
+    padding: 0.75rem 1.25rem;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+    position: sticky;
+    top: 0;
+  }
+
+  td {
+    padding: 0.9rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  tr:hover td { background: var(--surface2); }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .badge-green { background: var(--green-dim); color: var(--green); }
+  .badge-red { background: var(--red-dim); color: var(--red); }
+  .badge-amber { background: var(--amber-dim); color: var(--amber); }
+  .badge-blue { background: var(--accent-dim); color: var(--accent); }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.55rem 1rem;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--font);
+    cursor: pointer;
+    transition: all 0.15s;
+    border: none;
+    text-decoration: none;
+  }
+
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #3d7de8; }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border2);
+  }
+  .btn-ghost:hover { background: var(--surface2); color: var(--text); }
+
+  .btn-danger { background: var(--red-dim); color: var(--red); border: 1px solid var(--red-dim); }
+  .btn-danger:hover { background: #3d1515; }
+
+  .btn-sm { padding: 0.35rem 0.7rem; font-size: 12px; }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    padding: 1.5rem 1.25rem;
+  }
+
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+
+  label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  input, textarea, select {
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    padding: 0.6rem 0.85rem;
+    outline: none;
+    transition: border 0.15s;
+    width: 100%;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--accent);
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 120px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .input-hint {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .token-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .token-row input { flex: 1; font-family: var(--mono); font-size: 11px; }
+
+  .form-actions {
+    display: flex;
+    gap: 10px;
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .client-name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--accent-dim);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .page-name { font-weight: 500; font-size: 13px; }
+  .page-id { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+
+  .empty {
+    text-align: center;
+    padding: 3rem;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .code-block {
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 1rem 1.25rem;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.7;
+    color: #a8c4f0;
+    overflow-x: auto;
+    white-space: pre;
+    margin: 0.5rem 0;
+    user-select: all;
+  }
+
+  .code-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 0.85rem 1.25rem;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 200;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.2s;
+  }
+
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-left: 3px solid var(--green); }
+  .toast.error { border-left: 3px solid var(--red); }
+
+  .token-box {
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    margin: 0.5rem 0;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .token-value {
+    font-family: var(--mono);
+    font-size: 12px;
+    flex: 1;
+    word-break: break-all;
+  }
+
+  .token-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  .divider { height: 1px; background: var(--border); margin: 1rem 0; }
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
-<div id="login-screen">
-  <div class="login-box">
-    <h1>⚡ Alap</h1>
-    <p>Manage your inventory & bot</p>
-    <input type="text" id="ln" placeholder="Business Name" autocomplete="off">
-    <input type="text" id="lt" placeholder="Access Token" autocomplete="off">
-    <button onclick="doLogin()">Sign In →</button>
-    <div class="login-error" id="lerr">Business name or token is incorrect.</div>
-    <p style="margin-top:16px;font-size:11px;color:#555">Get your token from your Alap admin</p>
+<nav class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">⚡</div>
+    <div class="logo-text">Alap</div>
   </div>
-</div>
 
-<!-- APP -->
-<div id="app">
-  <div class="topbar">
-    <h1>⚡ Alap</h1>
-    <div class="topbar-right">
-      <span id="tb-name"></span>
-      <button onclick="doLogout()">Log Out</button>
+  <div class="nav-label">Menu</div>
+  <button class="nav-item active" onclick="showPage('dashboard', this)">Dashboard</button>
+  <button class="nav-item" onclick="showPage('clients', this)">Clients</button>
+  <button class="nav-item" onclick="showPage('add', this)">Add Client</button>
+  <button class="nav-item" onclick="showPage('tokens', this)">Access Tokens</button>
+  <button class="nav-item" onclick="showPage('settings', this)">Settings</button>
+
+  <div class="sidebar-bottom">
+    <div style="font-size:12px; color: var(--muted); padding: 0 0.5rem;">
+      <span class="status-dot"></span> System active
     </div>
   </div>
-  <div class="layout">
-    <div class="sidebar">
-      <div class="nav-item active" onclick="showTab('dashboard',this)">📊 Dashboard</div>
-      <div class="nav-item" onclick="showTab('orders',this)">📋 Orders</div>
-      <div class="nav-item" onclick="showTab('inventory',this)">📦 Inventory</div>
-      <div class="nav-item" onclick="showTab('marketing',this)">📣 Marketing</div>
-      <div class="nav-item" onclick="showTab('profit',this)">💸 Profit</div>
-      <div class="nav-item" onclick="showTab('ocr',this)">📷 OCR Scanner</div>
-      <div class="nav-item" onclick="showTab('qa',this)">💬 Q&A Training</div>
-      <div class="nav-item" onclick="showTab('blacklist',this)">🚫 Blacklist</div>
-      <div class="nav-item" onclick="showTab('integrations',this)">🔌 Integrations</div>
-      <div class="nav-item" onclick="showTab('history',this)">📋 History</div>
-      <div style="border-top:1px solid var(--border);margin:12px 0"></div>
-      <div class="nav-item" onclick="syncFromServer()" style="color:var(--primary)">🔄 Sync Server</div>
-      <div class="nav-item" onclick="downloadJSON()">⬇ Download JSON</div>
+</nav>
+
+<main class="main">
+
+  <!-- Dashboard -->
+  <div id="page-dashboard" class="page active">
+    <div class="page-header">
+      <h1>Dashboard</h1>
+      <p>Overview of your Alap service</p>
     </div>
-    <div class="content">
 
-      <!-- DASHBOARD -->
-      <div id="tab-dashboard" class="tab active">
-        <h2>📊 Dashboard</h2>
-        <div class="stat-grid" id="stats"></div>
-        <div id="alerts"></div>
-        <div class="card">
-          <h3>LIVE INVENTORY</h3>
-          <table class="tbl">
-            <thead><tr><th>Article No</th><th>Category</th><th>Total Stock (Pair)</th><th>Status</th></tr></thead>
-            <tbody id="dash-tbody"></tbody>
-          </table>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Clients</div>
+        <div class="stat-value accent" id="stat-clients">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Active Tokens</div>
+        <div class="stat-value green" id="stat-tokens">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Monthly Revenue</div>
+        <div class="stat-value" id="stat-revenue">৳0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Joined This Month</div>
+        <div class="stat-value amber" id="stat-new">0</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Recent Clients</span>
+        <button class="btn btn-primary btn-sm" onclick="showPage('add', document.querySelectorAll('.nav-item')[2])">+ Add Client</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Business</th>
+              <th>Token</th>
+              <th>Monthly Fee</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="dashboard-table">
+            <tr><td colspan="5" class="empty">No clients yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Quick Start</span>
+      </div>
+      <div style="padding: 1.25rem; display: flex; gap: 10px; flex-wrap: wrap;">
+        <button class="btn btn-ghost" onclick="downloadClientPanel()">
+          Download Client Panel
+        </button>
+        <button class="btn btn-ghost" onclick="showPage('add', document.querySelectorAll('.nav-item')[2])">
+          Add First Client
+        </button>
+        <button class="btn btn-ghost" onclick="exportJSON()">
+          Export customers.json
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Clients -->
+  <div id="page-clients" class="page">
+    <div class="page-header">
+      <h1>All Clients</h1>
+      <p>Manage all onboarded businesses</p>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Clients</span>
+        <button class="btn btn-primary btn-sm" onclick="showPage('add', document.querySelectorAll('.nav-item')[2])">+ Add Client</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Business</th>
+              <th>Token</th>
+              <th>Monthly Fee</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="clients-table">
+            <tr><td colspan="5" class="empty">No clients yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Client -->
+  <div id="page-add" class="page">
+    <div class="page-header">
+      <h1>Add New Client</h1>
+      <p>Onboard a new business to Alap</p>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Business Information</span>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Business Name</label>
+          <input type="text" id="f-name" placeholder="e.g. Crafts and Gifts BD">
+        </div>
+        <div class="form-group">
+          <label>Page ID</label>
+          <input type="text" id="f-page-id" placeholder="e.g. 132435660741702">
+        </div>
+        <div class="form-group full">
+          <label>Page Access Token</label>
+          <div class="token-row">
+            <input type="password" id="f-token" placeholder="EAAxxxxx...">
+            <button class="btn btn-ghost btn-sm" onclick="toggleField('f-token')">Show</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Language</label>
+          <select id="f-lang">
+            <option value="bangla_english">Bangla + English</option>
+            <option value="english">English only</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Monthly Fee (৳)</label>
+          <input type="number" id="f-fee" placeholder="e.g. 2500">
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="f-status">
+            <option value="active">Active</option>
+            <option value="paused">Paused</option>
+          </select>
         </div>
       </div>
 
-      <!-- INVENTORY -->
-      <div id="tab-inventory" class="tab">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-          <h2 style="margin:0">📦 Manage Inventory</h2>
-          <button class="btn btn-ghost btn-sm" onclick="openColModal()" style="font-size:12px">⚙ Column Settings</button>
-        </div>
-
-        <!-- Upload card -->
-        <div class="card">
-          <h3>UPLOAD EXCEL FILE</h3>
-          <p style="font-size:12px;color:var(--muted);margin-bottom:12px">
-            Upload your Victory Footwear stock file or any other Excel.<br>
-            You'll pick which columns to use before importing.
-          </p>
-          <div style="display:flex;gap:10px;flex-wrap:wrap">
-            <button class="btn btn-primary" onclick="document.getElementById('xl-file').click()">📂 Browse Excel / CSV</button>
-            <input type="file" id="xl-file" accept=".xlsx,.xls,.csv" onchange="handleExcelUpload(this)" style="display:none">
-            <button class="btn btn-ghost btn-sm" onclick="downloadTemplate()">📋 Download Template</button>
-          </div>
-          <div id="xlsx-status" style="margin-top:8px;font-size:11px;color:var(--muted)">Checking Excel library...</div>
-        </div>
-
-        <!-- Column Mapper (hidden until file loaded) -->
-        <div class="mapper" id="mapper">
-          <h3 style="color:var(--primary)">📋 Match Your Columns</h3>
-          <div id="mapper-info" style="font-size:12px;color:var(--muted);margin-bottom:12px"></div>
-          <div class="map-grid">
-            <div class="map-field">
-              <label>Article / Product Name *</label>
-              <select id="map-name" onchange="refreshPreview()"></select>
-            </div>
-            <div class="map-field">
-              <label>Total Stock (Pair)</label>
-              <select id="map-stock" onchange="refreshPreview()"></select>
-            </div>
-            <div class="map-field">
-              <label>Unit Price (Per Pair)</label>
-              <select id="map-price" onchange="refreshPreview()"></select>
-            </div>
-            <div class="map-field">
-              <label>Category / Remarks</label>
-              <select id="map-details" onchange="refreshPreview()"></select>
-            </div>
-          </div>
-          <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px">PREVIEW (first 5 rows)</div>
-          <div class="preview-box" id="preview-box"></div>
-          <div style="margin-top:6px;font-size:11px;color:var(--muted)" id="preview-count"></div>
-          <div class="mapper-actions" style="margin-top:12px">
-            <button class="btn btn-success" onclick="confirmImport()">✅ Import Products</button>
-            <button class="btn btn-ghost btn-sm" onclick="cancelMapper()">Cancel</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <h3>⚡ QUICK ADD (SMART PARSE)</h3>
-          <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Describe a product naturally — works offline, no internet needed.</p>
-          <p style="font-size:11px;color:#4f8ef7;margin-bottom:8px">Examples: "8-303 gents PU price 500 24 pairs" &nbsp;|&nbsp; "ladies shoe 2039, ৳400, 30 stock"</p>
-          <div style="display:flex;gap:10px">
-            <input type="text" id="ai-desc" placeholder='e.g. "8-303 gents PU, price 500, 24 pairs in stock"' style="flex:1">
-            <button class="btn btn-primary" onclick="aiAddProduct()">⚡ Parse & Add</button>
-          </div>
-        </div>
-
-        <!-- Manual Add -->
-        <div class="card">
-          <h3>✏️ ADD MANUALLY</h3>
-          <div id="manual-add-form" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:8px;align-items:end">
-            <div><label style="font-size:11px;color:var(--muted)" id="lbl-name">Article / Product Name</label><input type="text" id="m-name" placeholder="e.g. 8-303" style="width:100%;margin-top:4px"></div>
-            <div id="wrap-price"><label style="font-size:11px;color:var(--muted)" id="lbl-price">Price</label><input type="number" id="m-price" placeholder="0" style="width:100%;margin-top:4px"></div>
-            <div id="wrap-details"><label style="font-size:11px;color:var(--muted)" id="lbl-details">Category</label><input type="text" id="m-details" placeholder="e.g. Gents PU" style="width:100%;margin-top:4px"></div>
-            <div id="wrap-stock"><label style="font-size:11px;color:var(--muted)" id="lbl-stock">Stock (Pair)</label><input type="number" id="m-stock" placeholder="0" style="width:100%;margin-top:4px"></div>
-            <div id="wrap-extra1" style="display:none"><label style="font-size:11px;color:var(--muted)" id="lbl-extra1">Extra 1</label><input type="text" id="m-extra1" placeholder="" style="width:100%;margin-top:4px"></div>
-            <div id="wrap-extra2" style="display:none"><label style="font-size:11px;color:var(--muted)" id="lbl-extra2">Extra 2</label><input type="text" id="m-extra2" placeholder="" style="width:100%;margin-top:4px"></div>
-            <button class="btn btn-primary" onclick="manualAdd()" style="margin-top:18px">+ Add</button>
-          </div>
-        </div>
-
-        <!-- Inventory list -->
-        <div class="card">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-            <h3 style="margin:0">ALL PRODUCTS</h3>
-            <div style="display:flex;gap:6px">
-              <input type="text" id="search" placeholder="Search..." style="padding:5px 8px;font-size:12px;width:160px" oninput="renderInventory()">
-              <button class="btn btn-ghost btn-sm" onclick="downloadJSON()">⬇ JSON</button>
-            </div>
-          </div>
-          <div style="overflow-x:auto">
-            <table class="tbl">
-              <thead id="inv-thead"><tr><th>#</th><th>Article / Product Name</th><th>Category</th><th>Price</th><th>Stock (Pair)</th><th>Status</th><th>Actions</th></tr></thead>
-              <tbody id="inv-tbody"></tbody>
-            </table>
-          </div>
-          <div id="inv-empty" class="empty" style="display:none">
-            <div class="empty-icon">📭</div>
-            <div>No products yet. Upload Excel or add manually.</div>
-          </div>
-        </div>
+      <div style="padding: 1.25rem; border-top: 1px solid var(--border);">
+        <div class="divider" style="margin: 0;"></div>
       </div>
 
-      <!-- ORDERS TAB -->
-      <div id="tab-orders" class="tab">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-          <h2 style="margin:0">📋 Orders</h2>
-          <div style="display:flex;gap:8px">
-            <select id="order-filter" onchange="renderOrders()" style="padding:5px 8px;font-size:12px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;color:var(--text)">
-              <option value="">All Orders</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="dispatched">Dispatched</option>
-              <option value="delivered">Delivered</option>
-              <option value="pending">Pending</option>
-            </select>
-            <button class="btn btn-primary btn-sm" onclick="syncFromServer()">🔄 Sync</button>
-          </div>
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Product Inventory</label>
+          <textarea id="f-inventory" placeholder="List products. Example:
+Sharee — Cotton, size S/M/L, price 1200 taka, available: yes"></textarea>
         </div>
-        <div id="orders-list">
-          <div class="empty"><div class="empty-icon">📦</div><div>No orders yet. Sync from server or wait for customers.</div></div>
+        <div class="form-group full">
+          <label>Custom Q&A</label>
+          <textarea id="f-qa" placeholder="Q: Do you deliver?
+A: Yes, everywhere in Bangladesh"></textarea>
         </div>
       </div>
-
-      <!-- MARKETING TAB -->
-      <div id="tab-marketing" class="tab">
-        <h2>📣 Marketing & Broadcasts</h2>
-
-        <!-- WhatsApp Broadcast -->
-        <div class="card">
-          <h3>📱 WHATSAPP BROADCAST</h3>
-          <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Send a message to multiple customers at once. Requires WhatsApp Cloud API token in Integrations.</p>
-          <div style="margin-bottom:10px">
-            <label style="font-size:11px;color:var(--muted)">Message</label>
-            <textarea id="wa-msg" rows="3" style="width:100%;margin-top:4px" placeholder="আমাদের নতুন কালেকশন এসেছে! দেখতে ক্লিক করুন..."></textarea>
-          </div>
-          <div style="margin-bottom:10px">
-            <label style="font-size:11px;color:var(--muted)">Phone Numbers (one per line or comma separated)</label>
-            <textarea id="wa-phones" rows="4" style="width:100%;margin-top:4px;font-family:monospace;font-size:11px" placeholder="01712345678&#10;01898765432&#10;..."></textarea>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px">
-            <button class="btn btn-primary" onclick="sendBroadcast()">📤 Send Broadcast</button>
-            <span id="broadcast-result" style="font-size:12px;color:var(--muted)"></span>
-          </div>
-        </div>
-
-        <!-- Comment Trigger Settings -->
-        <div class="card">
-          <h3>💬 COMMENT-TO-DM TRIGGERS</h3>
-          <p style="font-size:12px;color:var(--muted);margin-bottom:10px">When someone comments these words on your Facebook post, the bot auto-DMs them with your product list.</p>
-          <div style="margin-bottom:10px">
-            <label style="font-size:11px;color:var(--muted)">Trigger Keywords (comma separated)</label>
-            <input type="text" id="comment-triggers" style="width:100%;margin-top:4px"
-              placeholder="price, দাম, কত, how much, available, আছে">
-          </div>
-          <button class="btn btn-primary btn-sm" onclick="saveCommentTriggers()">Save Triggers</button>
-        </div>
-
-        <!-- Leads -->
-        <div class="card">
-          <h3>🎯 LEADS & INQUIRIES</h3>
-          <div id="leads-list">
-            <div class="empty"><div class="empty-icon">🎯</div><div>No leads yet. Sync from server to see comment-to-DM leads and lead form submissions.</div></div>
-          </div>
-        </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="addClient()">Create Client & Generate Token</button>
+        <button class="btn btn-ghost" onclick="clearForm()">Clear</button>
       </div>
+    </div>
+  </div>
 
-      <!-- PROFIT TAB -->
-      <div id="tab-profit" class="tab">
-        <h2>💸 Profit & Expenses</h2>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
-          <div class="profit-stat"><div class="profit-num" id="p-revenue">৳0</div><div class="profit-label">Gross Revenue</div></div>
-          <div class="profit-stat"><div class="profit-num" id="p-expenses">৳0</div><div class="profit-label">Total Expenses</div></div>
-          <div class="profit-stat"><div class="profit-num" id="p-profit">৳0</div><div class="profit-label">Net Profit</div></div>
-          <div class="profit-stat"><div class="profit-num" id="p-orders">0</div><div class="profit-label">Total Orders</div></div>
-        </div>
+  <!-- Access Tokens -->
+  <div id="page-tokens" class="page">
+    <div class="page-header">
+      <h1>Access Tokens</h1>
+      <p>Manage client login tokens. Share these with clients to access their panel.</p>
+    </div>
 
-        <div class="card">
-          <h3>➕ LOG EXPENSE</h3>
-          <div class="expense-form">
-            <div>
-              <label style="font-size:11px;color:var(--muted)">Description</label>
-              <input type="text" id="exp-desc" placeholder="e.g. Facebook Ads, Delivery cost" style="width:100%;margin-top:4px">
-            </div>
-            <div>
-              <label style="font-size:11px;color:var(--muted)">Amount (৳)</label>
-              <input type="number" id="exp-amount" placeholder="0" style="width:100%;margin-top:4px">
-            </div>
-            <div>
-              <label style="font-size:11px;color:var(--muted)">Category</label>
-              <select id="exp-cat" style="width:100%;margin-top:4px;padding:8px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:12px">
-                <option>Advertising</option>
-                <option>Delivery</option>
-                <option>Product Cost</option>
-                <option>Office</option>
-                <option>Other</option>
-              </select>
-            </div>
-            <button class="btn btn-primary" onclick="logExpense()" style="margin-top:18px">Add</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <h3>📊 MONTHLY BREAKDOWN</h3>
-          <div id="monthly-breakdown"></div>
-        </div>
-
-        <div class="card">
-          <h3>🧾 EXPENSE LOG</h3>
-          <div id="expense-log">
-            <div class="empty"><div class="empty-icon">💸</div><div>No expenses logged yet.</div></div>
-          </div>
-        </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Active Tokens</span>
       </div>
-
-      <!-- OCR SCANNER TAB -->
-      <div id="tab-ocr" class="tab">
-        <h2>📷 OCR Invoice Scanner</h2>
-        <div class="card">
-          <h3>SCAN SUPPLIER INVOICE</h3>
-          <p style="font-size:12px;color:var(--muted);margin-bottom:16px">
-            Take a photo of a physical invoice or packing list. The AI reads it and extracts product names, quantities, and prices automatically.<br>
-            Requires Google Vision API key in Integrations tab.
-          </p>
-          <div class="ocr-drop" id="ocr-drop" onclick="document.getElementById('ocr-file').click()"
-               ondragover="event.preventDefault();this.classList.add('drag')"
-               ondragleave="this.classList.remove('drag')"
-               ondrop="handleOCRDrop(event)">
-            <div style="font-size:32px;margin-bottom:8px">📸</div>
-            <div style="font-weight:600;margin-bottom:4px">Click or drag photo here</div>
-            <div style="font-size:11px;color:var(--muted)">JPG, PNG — max 4MB</div>
-          </div>
-          <input type="file" id="ocr-file" accept="image/*" style="display:none" onchange="handleOCRUpload(this)">
-          <div id="ocr-preview" style="margin-top:10px;display:none">
-            <img id="ocr-img" style="max-width:100%;max-height:200px;border-radius:6px;border:1px solid var(--border)">
-          </div>
-          <div style="margin-top:12px;display:none" id="ocr-scan-btn-wrap">
-            <button class="btn btn-primary" onclick="runOCR()">🔍 Scan Invoice</button>
-            <span id="ocr-status" style="font-size:12px;color:var(--muted);margin-left:10px"></span>
-          </div>
-        </div>
-
-        <div class="card" id="ocr-results-card" style="display:none">
-          <h3>DETECTED PRODUCTS</h3>
-          <p style="font-size:11px;color:var(--muted);margin-bottom:12px">Review and edit before importing. Uncheck items you don't want.</p>
-          <div id="ocr-product-list"></div>
-          <button class="btn btn-success" onclick="importOCRProducts()" style="margin-top:12px">✅ Import Checked Products</button>
-        </div>
-
-        <div class="card" id="ocr-raw-card" style="display:none">
-          <h3>RAW EXTRACTED TEXT</h3>
-          <pre id="ocr-raw-text" style="font-size:11px;color:var(--muted);white-space:pre-wrap;max-height:200px;overflow-y:auto"></pre>
-        </div>
+      <div id="tokens-list" style="padding: 1.25rem;">
+        <div class="empty">No clients yet. Create one to generate a token.</div>
       </div>
+    </div>
 
-      <!-- BLACKLIST TAB -->
-      <div id="tab-blacklist" class="tab">
-        <h2>🚫 Fake Buyer Blacklist</h2>
-        <div class="card">
-          <h3>ADD TO BLACKLIST</h3>
-          <div style="display:grid;grid-template-columns:1fr 2fr auto;gap:8px;align-items:end">
-            <div>
-              <label style="font-size:11px;color:var(--muted)">Phone Number</label>
-              <input type="text" id="bl-phone" placeholder="01712345678" style="width:100%;margin-top:4px">
-            </div>
-            <div>
-              <label style="font-size:11px;color:var(--muted)">Reason</label>
-              <input type="text" id="bl-reason" placeholder="e.g. Refused COD 3 times" style="width:100%;margin-top:4px">
-            </div>
-            <button class="btn btn-primary" onclick="addBlacklist()" style="margin-top:18px">Block</button>
-          </div>
-        </div>
-        <div class="card">
-          <h3>BLOCKED NUMBERS</h3>
-          <div id="blacklist-list">
-            <div class="empty"><div class="empty-icon">✅</div><div>No blocked numbers.</div></div>
-          </div>
-        </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">How to Share Tokens</span>
       </div>
-
-      <!-- INTEGRATIONS TAB -->
-      <div id="tab-integrations" class="tab">
-        <h2>🔌 API Integrations</h2>
-        <p style="font-size:12px;color:var(--muted);margin-bottom:16px">
-          Your API keys are saved locally and synced to your bot server. Each client has their own keys — your keys never touch other clients.
-          <strong style="color:var(--warning)"> Keep keys private — never share your customers.json publicly.</strong>
+      <div style="padding: 1.25rem; font-size: 13px; color: var(--muted); line-height: 1.7;">
+        <p style="margin-bottom: 1rem;">
+          1. Copy the token from the list above<br>
+          2. Send to your client via email/WhatsApp<br>
+          3. Client opens <code>Alap_Client_Panel.html</code><br>
+          4. Client enters: Business Name + Token<br>
+          5. Client can now edit their inventory
         </p>
+        <div class="code-label">Example email:</div>
+        <div class="code-block">Hi,
 
-        <!-- Server URL -->
-        <div class="integration-group">
-          <h4>🌐 Your Bot Server (Railway URL)</h4>
-          <div class="int-row" style="grid-template-columns:1fr">
-            <div>
-              <label>Railway Server URL</label>
-              <input type="text" id="int-serverUrl" placeholder="https://your-app.up.railway.app">
-            </div>
-          </div>
-          <div class="int-row" style="grid-template-columns:1fr">
-            <div>
-              <label>Panel Token (from Admin Panel)</label>
-              <input type="text" id="int-panelToken" placeholder="your_panel_token">
-            </div>
-          </div>
-          <div class="int-row" style="grid-template-columns:1fr">
-            <div>
-              <label>Facebook Page ID</label>
-              <input type="text" id="int-pageId" placeholder="132435660741702">
-            </div>
-          </div>
-        </div>
+Access your Alap Client Panel here:
+[link to Alap_Client_Panel.html]
 
-        <!-- AI -->
-        <div class="integration-group">
-          <h4>🤖 AI — Groq</h4>
-          <div class="int-row" style="grid-template-columns:1fr">
-            <div>
-              <label>Groq API Key <a href="https://console.groq.com" target="_blank" style="color:var(--primary);font-size:10px">Get key →</a></label>
-              <input type="password" id="int-groqKey" placeholder="gsk_...">
-            </div>
-          </div>
-        </div>
+Business Name: Crafts and Gifts BD
+Your Token: alap_token_x7k9p2m1
 
-        <!-- bKash/Nagad -->
-        <div class="integration-group">
-          <h4>💳 bKash / Nagad Payment</h4>
-          <div class="int-row">
-            <div><label>bKash Merchant Number</label><input type="text" id="int-bkashNumber" placeholder="01XXXXXXXXX"></div>
-            <div><label>Nagad Number (optional)</label><input type="text" id="int-nagadNumber" placeholder="01XXXXXXXXX"></div>
-          </div>
-        </div>
-
-        <!-- Steadfast -->
-        <div class="integration-group">
-          <h4>🚚 Steadfast Courier <a href="https://portal.packzy.com" target="_blank" style="color:var(--primary);font-size:10px">Get keys →</a></h4>
-          <div class="int-row">
-            <div><label>API Key</label><input type="password" id="int-steadfastKey" placeholder="Your Steadfast API Key"></div>
-            <div><label>Secret Key</label><input type="password" id="int-steadfastSecret" placeholder="Your Steadfast Secret"></div>
-          </div>
-        </div>
-
-        <!-- Pathao -->
-        <div class="integration-group">
-          <h4>🛵 Pathao Courier <a href="https://merchant.pathao.com" target="_blank" style="color:var(--primary);font-size:10px">Get credentials →</a></h4>
-          <div class="int-row">
-            <div><label>Client ID</label><input type="password" id="int-pathaoClientId" placeholder="Pathao Client ID"></div>
-            <div><label>Client Secret</label><input type="password" id="int-pathaoClientSecret" placeholder="Pathao Client Secret"></div>
-          </div>
-          <div class="int-row">
-            <div><label>Username (email)</label><input type="text" id="int-pathaoUsername" placeholder="your@email.com"></div>
-            <div><label>Password</label><input type="password" id="int-pathaoPassword" placeholder="Pathao password"></div>
-          </div>
-          <div class="int-row" style="grid-template-columns:1fr">
-            <div><label>Store ID</label><input type="text" id="int-pathaoStoreId" placeholder="Your Pathao store ID (number)"></div>
-          </div>
-        </div>
-
-        <!-- Paperfly -->
-        <div class="integration-group">
-          <h4>✈ Paperfly Courier</h4>
-          <div class="int-row">
-            <div><label>API Key</label><input type="password" id="int-paperflyKey" placeholder="Paperfly API Key"></div>
-            <div><label>Secret</label><input type="password" id="int-paperflySecret" placeholder="Paperfly Secret"></div>
-          </div>
-        </div>
-
-        <!-- WhatsApp -->
-        <div class="integration-group">
-          <h4>📱 WhatsApp Cloud API <a href="https://developers.facebook.com/docs/whatsapp" target="_blank" style="color:var(--primary);font-size:10px">Setup guide →</a></h4>
-          <div class="int-row">
-            <div><label>Access Token</label><input type="password" id="int-whatsappToken" placeholder="EAA..."></div>
-            <div><label>Phone Number ID</label><input type="text" id="int-whatsappPhoneId" placeholder="1234567890"></div>
-          </div>
-        </div>
-
-        <!-- Google Vision -->
-        <div class="integration-group">
-          <h4>📷 Google Vision API (OCR) <a href="https://console.cloud.google.com/apis/library/vision.googleapis.com" target="_blank" style="color:var(--primary);font-size:10px">Enable →</a></h4>
-          <div class="int-row" style="grid-template-columns:1fr">
-            <div><label>API Key</label><input type="password" id="int-googleVisionKey" placeholder="AIza..."></div>
-          </div>
-        </div>
-
-        <div style="display:flex;gap:10px;margin-top:8px">
-          <button class="btn btn-success" onclick="saveIntegrations()">✅ Save All Keys</button>
-          <button class="btn btn-ghost btn-sm" onclick="pushIntegrationsToServer()">☁ Push to Server</button>
-        </div>
-        <div id="int-status" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+Questions? Reply to this email.</div>
       </div>
-
-      <!-- Q&A (existing) -->
-      <div id="tab-qa" class="tab">
-        <h2>💬 Customer Q&A Training</h2>
-        <div class="card">
-          <h3>⚡ EXTRACT FROM CUSTOMER MESSAGE</h3>
-          <p style="font-size:12px;color:var(--muted);margin-bottom:6px">Paste a customer conversation — auto-detects the Q&A pair. Works offline.</p>
-          <p style="font-size:11px;color:#4f8ef7;margin-bottom:10px">Format: "Customer: Delivery charge koto?&nbsp;&nbsp;You: 60 taka inside Dhaka"</p>
-          <textarea id="qa-raw" rows="4" style="width:100%;margin-bottom:8px" placeholder="Customer: Delivery charge koto?&#10;You: Dhaka te 60 taka, outside 120 taka"></textarea>
-          <button class="btn btn-primary btn-sm" onclick="extractQA()">⚡ Extract Q&A</button>
-        </div>
-        <div class="card">
-          <h3>ADD MANUALLY</h3>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-            <div><label style="font-size:11px;color:var(--muted)">Question</label><input type="text" id="mq" placeholder="e.g. Delivery charge?" style="width:100%;margin-top:4px"></div>
-            <div><label style="font-size:11px;color:var(--muted)">Answer</label><input type="text" id="ma" placeholder="e.g. 60 taka inside Dhaka" style="width:100%;margin-top:4px"></div>
-          </div>
-          <button class="btn btn-primary btn-sm" onclick="addManualQA()">Add Q&A</button>
-        </div>
-        <div class="card">
-          <h3>Q&A LIBRARY</h3>
-          <div id="qa-list"></div>
-          <div id="qa-empty" class="empty" style="display:none">
-            <div class="empty-icon">📚</div>
-            <div>No Q&A yet. Add some to train the bot.</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- HISTORY -->
-      <div id="tab-history" class="tab">
-        <h2>📋 Change History</h2>
-        <div class="card">
-          <div id="hist-list"></div>
-          <div id="hist-empty" class="empty" style="display:none">
-            <div class="empty-icon">🗂</div>
-            <div>No changes recorded yet.</div>
-          </div>
-        </div>
-      </div>
-
     </div>
   </div>
-</div>
 
-<!-- COLUMN SETTINGS MODAL -->
-<div class="modal-overlay" id="col-modal">
-  <div class="modal-box">
-    <h3>⚙ Column Settings</h3>
-    <p>Rename columns to match your products. Toggle off columns you don't need. Changes apply to the table, manual add form, and dashboard.</p>
-    <div style="margin-bottom:12px">
-      <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px">QUICK PRESETS</div>
-      <div class="preset-row">
-        <button class="preset-btn" onclick="applyPreset('footwear')">👟 Footwear</button>
-        <button class="preset-btn" onclick="applyPreset('fashion')">👗 Fashion / Clothing</button>
-        <button class="preset-btn" onclick="applyPreset('jewelry')">💍 Jewelry / Ring</button>
-        <button class="preset-btn" onclick="applyPreset('electronics')">📱 Electronics</button>
-        <button class="preset-btn" onclick="applyPreset('food')">🍔 Food / Grocery</button>
-        <button class="preset-btn" onclick="applyPreset('generic')">📦 Generic</button>
+  <!-- Settings -->
+  <div id="page-settings" class="page">
+    <div class="page-header">
+      <h1>Settings</h1>
+      <p>Export data and manage your service</p>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Export Data</span>
+      </div>
+      <div style="padding: 1.25rem; display: flex; gap: 10px; flex-wrap: wrap;">
+        <button class="btn btn-ghost" onclick="showExportOptions()">Export JSON</button>
+        <button class="btn btn-ghost" onclick="exportClientsCSV()">Export Clients (CSV)</button>
+        <button class="btn btn-ghost" onclick="downloadClientPanel()">Download Client Panel</button>
       </div>
     </div>
-    <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:10px">CUSTOMIZE COLUMN NAMES</div>
-    <div class="col-setting-row" style="font-size:11px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:10px">
-      <div>Field</div><div>Column Label (rename)</div>
-    </div>
-    <div class="col-setting-row">
-      <label>Product / Article Name <span style="color:var(--error)">*</span></label>
-      <div class="col-input-wrap"><input id="cs-name" type="text" value="Article / Product Name"></div>
-    </div>
-    <div class="col-setting-row">
-      <label>Stock / Quantity</label>
-      <div class="col-input-wrap">
-        <button class="col-toggle on" id="tog-stock" onclick="toggleCol('stock')"></button>
-        <input id="cs-stock" type="text" value="Stock (Pair)">
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Dangerous Zone</span>
       </div>
-    </div>
-    <div class="col-setting-row">
-      <label>Price</label>
-      <div class="col-input-wrap">
-        <button class="col-toggle on" id="tog-price" onclick="toggleCol('price')"></button>
-        <input id="cs-price" type="text" value="Price">
+      <div style="padding: 1.25rem;">
+        <button class="btn btn-danger" onclick="clearAllData()">Delete All Data</button>
+        <p style="font-size: 11px; color: var(--muted); margin-top: 0.5rem;">This will delete all clients and cannot be undone.</p>
       </div>
-    </div>
-    <div class="col-setting-row">
-      <label>Category / Details</label>
-      <div class="col-input-wrap">
-        <button class="col-toggle on" id="tog-details" onclick="toggleCol('details')"></button>
-        <input id="cs-details" type="text" value="Category">
-      </div>
-    </div>
-    <div class="col-setting-row">
-      <label>Extra Column 1</label>
-      <div class="col-input-wrap">
-        <button class="col-toggle" id="tog-extra1" onclick="toggleCol('extra1')"></button>
-        <input id="cs-extra1" type="text" placeholder="e.g. Size, Color, Brand...">
-      </div>
-    </div>
-    <div class="col-setting-row">
-      <label>Extra Column 2</label>
-      <div class="col-input-wrap">
-        <button class="col-toggle" id="tog-extra2" onclick="toggleCol('extra2')"></button>
-        <input id="cs-extra2" type="text" placeholder="e.g. Remarks, Warranty...">
-      </div>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:20px">
-      <button class="btn btn-success" onclick="saveColSettings()">✅ Apply & Save</button>
-      <button class="btn btn-ghost btn-sm" onclick="closeColModal()">Cancel</button>
     </div>
   </div>
-</div>
+
+</main>
+
+<div class="toast" id="toast"></div>
 
 <script>
-// ════════════════════════════════════
-// STATE
-// ════════════════════════════════════
-let CLIENT = null;
-let XL_ROWS = [];
-let XL_HEADERS = [];
-let OCR_IMAGE_B64 = null;
-let OCR_DETECTED_PRODUCTS = [];
+  let clients = JSON.parse(localStorage.getItem('alap_clients') || '{}');
 
-// Default API keys object
-const EMPTY_KEYS = {
-  serverUrl:'', panelToken:'', pageId:'',
-  groqKey:'',
-  bkashNumber:'', nagadNumber:'',
-  steadfastKey:'', steadfastSecret:'',
-  pathaoClientId:'', pathaoClientSecret:'', pathaoUsername:'', pathaoPassword:'', pathaoStoreId:'',
-  paperflyKey:'', paperflySecret:'',
-  whatsappToken:'', whatsappPhoneId:'',
-  googleVisionKey:''
-};
+  function renderDashboard() {
+    const clientList = Object.values(clients);
+    const active = clientList.filter(c => c.status === 'active').length;
+    const revenue = clientList.filter(c => c.status === 'active').reduce((s, c) => s + (Number(c.fee) || 0), 0);
+    const newClients = clientList.filter(c => {
+      const created = new Date(c.created_at);
+      return (Date.now() - created) < 30*24*60*60*1000;
+    }).length;
 
-// Column settings — labels & visibility
-let COLS = {
-  name:    { label: 'Article / Product Name', on: true },
-  stock:   { label: 'Stock (Pair)',            on: true },
-  price:   { label: 'Price',                   on: true },
-  details: { label: 'Category',                on: true },
-  extra1:  { label: '',                         on: false },
-  extra2:  { label: '',                         on: false },
-};
+    document.getElementById('stat-clients').textContent = clientList.length;
+    document.getElementById('stat-tokens').textContent = clientList.length;
+    document.getElementById('stat-revenue').textContent = '৳' + revenue.toLocaleString();
+    document.getElementById('stat-new').textContent = newClients;
 
-const PRESETS = {
-  footwear:    { name:'Article No', stock:'Stock (Pair)', price:'Unit Price', details:'Category',        extra1:'',        extra2:'' },
-  fashion:     { name:'Product Name', stock:'Stock',     price:'Price (৳)',   details:'Size / Details',  extra1:'Color',   extra2:'' },
-  jewelry:     { name:'Item Name',    stock:'Qty',        price:'Price (৳)',   details:'Type',            extra1:'Metal',   extra2:'Weight (g)' },
-  electronics: { name:'Model / SKU',  stock:'Stock',     price:'Price (৳)',   details:'Category',        extra1:'Brand',   extra2:'Warranty' },
-  food:        { name:'Product Name', stock:'Qty (kg/pcs)', price:'Price',    details:'Category',        extra1:'Expiry',  extra2:'' },
-  generic:     { name:'Article / Product Name', stock:'Stock', price:'Price', details:'Category',        extra1:'',        extra2:'' },
-};
-
-// ════════════════════════════════════
-// LOGIN / LOGOUT
-// ════════════════════════════════════
-function doLogin() {
-  const name = document.getElementById('ln').value.trim();
-  const token = document.getElementById('lt').value.trim();
-  if (!name || !token) { showLoginErr('Please enter both fields'); return; }
-
-  const all = getAll();
-
-  // Check if client exists with this token
-  if (all[token]) {
-    // Existing client — verify name matches
-    if (all[token].name.toLowerCase() === name.toLowerCase()) {
-      CLIENT = all[token];
-      openApp();
-      return;
-    } else {
-      showLoginErr('Business name does not match this token.');
+    const tbody = document.getElementById('dashboard-table');
+    if (clientList.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 2rem; color: var(--muted);">No clients yet. Create your first one →</td></tr>';
       return;
     }
+    tbody.innerHTML = clientList.slice(0, 5).map(c => `
+      <tr>
+        <td><div class="client-name">
+          <div class="avatar">${c.name.slice(0,2).toUpperCase()}</div>
+          <div><div class="page-name">${c.name}</div></div>
+        </div></td>
+        <td><code style="background: var(--bg); padding: 2px 6px; border-radius: 4px; font-size: 10px; font-family: var(--mono);">${c.token.slice(0, 15)}...</code></td>
+        <td>৳${Number(c.fee || 0).toLocaleString()}</td>
+        <td><span class="badge ${c.status === 'active' ? 'badge-green' : 'badge-amber'}">${c.status === 'active' ? '● Active' : '⏸ Paused'}</span></td>
+        <td><button class="btn btn-ghost btn-sm" onclick="alert('Edit feature coming soon')">Edit</button></td>
+      </tr>
+    `).join('');
   }
 
-  // New client — create account
-  CLIENT = { name, token, inventory: [], qa: [], history: [] };
-  saveClient();
-  openApp();
-}
-
-function showLoginErr(msg) {
-  const el = document.getElementById('lerr');
-  el.textContent = msg;
-  el.style.display = 'block';
-}
-
-function openApp() {
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  document.getElementById('tb-name').textContent = CLIENT.name;
-  // Restore saved column settings
-  if (CLIENT.cols) { Object.assign(COLS, CLIENT.cols); }
-  applyColsToUI();
-  renderDashboard();
-  renderInventory();
-  renderOrders();
-  renderBlacklist();
-  renderQA();
-  renderHistory();
-  // Check SheetJS availability
-  setTimeout(() => {
-    const el = document.getElementById('xlsx-status');
-    if (!el) return;
-    if (typeof XLSX !== 'undefined') {
-      el.textContent = '✅ Excel library loaded — .xlsx files supported';
-      el.style.color = '#4caf50';
-    } else {
-      el.textContent = '⚠ Excel library not loaded (internet required). Use .csv files or check your connection.';
-      el.style.color = '#ff9800';
+  function renderClients() {
+    const clientList = Object.values(clients);
+    const tbody = document.getElementById('clients-table');
+    if (clientList.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5"><div class="empty">No clients yet</div></td></tr>';
+      return;
     }
-  }, 800);
-}
+    tbody.innerHTML = clientList.map(c => `
+      <tr>
+        <td><div class="client-name">
+          <div class="avatar">${c.name.slice(0,2).toUpperCase()}</div>
+          <div><div class="page-name">${c.name}</div></div>
+        </div></td>
+        <td><code style="background: var(--bg); padding: 2px 6px; border-radius: 4px; font-size: 10px; font-family: var(--mono);">${c.token}</code></td>
+        <td>৳${Number(c.fee || 0).toLocaleString()}</td>
+        <td><span class="badge ${c.status === 'active' ? 'badge-green' : 'badge-amber'}">${c.status === 'active' ? '● Active' : '⏸ Paused'}</span></td>
+        <td><button class="btn btn-ghost btn-sm" onclick="deleteClient('${c.token}')">Delete</button></td>
+      </tr>
+    `).join('');
+  }
 
-function doLogout() {
-  CLIENT = null;
-  location.reload();
-}
+  function renderTokens() {
+    const clientList = Object.values(clients);
+    const list = document.getElementById('tokens-list');
+    if (clientList.length === 0) {
+      list.innerHTML = '<div class="empty">No clients yet. Create one to generate a token.</div>';
+      return;
+    }
+    list.innerHTML = clientList.map(c => `
+      <div class="token-box">
+        <div>
+          <div style="font-size: 13px; font-weight: 500; margin-bottom: 4px;">${c.name}</div>
+          <div class="token-value">${c.token}</div>
+        </div>
+        <div class="token-actions">
+          <button class="btn btn-ghost btn-sm" onclick="copyToken('${c.token}')">Copy</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteClient('${c.token}')">Revoke</button>
+        </div>
+      </div>
+    `).join('');
+  }
 
-// ════════════════════════════════════
-// STORAGE
-// ════════════════════════════════════
-function getAll() {
-  try { return JSON.parse(localStorage.getItem('alap_v4') || '{}'); }
-  catch(e) { return {}; }
-}
+  function addClient() {
+    const name = document.getElementById('f-name').value.trim();
+    const page_id = document.getElementById('f-page-id').value.trim();
+    const token_input = document.getElementById('f-token').value.trim();
 
-function saveClient() {
-  if (!CLIENT) return;
-  const all = getAll();
-  all[CLIENT.token] = CLIENT;
-  localStorage.setItem('alap_v4', JSON.stringify(all));
-}
+    if (!name || !page_id || !token_input) {
+      toast('Fill all fields', 'error');
+      return;
+    }
 
-function addHistory(action, detail) {
-  CLIENT.history = CLIENT.history || [];
-  CLIENT.history.unshift({ action, detail, time: new Date().toLocaleString() });
-  if (CLIENT.history.length > 100) CLIENT.history.pop();
-}
+    const token = 'alap_token_' + Math.random().toString(36).slice(2, 11);
 
-// ════════════════════════════════════
-// TABS
-// ════════════════════════════════════
-function showTab(name, el) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
-  el.classList.add('active');
-  // Lazy-load tabs
-  if (name === 'orders')       renderOrders();
-  if (name === 'marketing')    { renderLeads(); loadCommentTriggers(); }
-  if (name === 'profit')       loadProfit();
-  if (name === 'blacklist')    renderBlacklist();
-  if (name === 'integrations') loadIntegrations();
-  if (name === 'history')      renderHistory();
-  if (name === 'qa')           renderQA();
-}
-
-// ════════════════════════════════════
-// DASHBOARD
-// ════════════════════════════════════
-function renderDashboard() {
-  if (!CLIENT) return;
-  const inv = CLIENT.inventory || [];
-  const total = inv.length;
-  const inStock = inv.filter(p => +p.stock > 5).length;
-  const low = inv.filter(p => +p.stock > 0 && +p.stock <= 5).length;
-  const out = inv.filter(p => +p.stock <= 0).length;
-
-  document.getElementById('stats').innerHTML = `
-    <div class="stat"><div class="stat-num">${total}</div><div class="stat-label">Total Articles</div></div>
-    <div class="stat"><div class="stat-num" style="color:var(--success)">${inStock}</div><div class="stat-label">In Stock</div></div>
-    <div class="stat"><div class="stat-num" style="color:var(--warning)">${low + out}</div><div class="stat-label">Low / Out</div></div>
-    <div class="stat"><div class="stat-num" style="color:var(--primary)" id="stat-orders">${(CLIENT.orders||[]).length}</div><div class="stat-label">Total Orders</div></div>
-  `;
-
-  const alertsEl = document.getElementById('alerts');
-  const alerts = inv.filter(p => +p.stock > 0 && +p.stock <= 24);
-  alertsEl.innerHTML = alerts.map(p =>
-    `<div class="alert-bar">⚠ <strong>${p.name}</strong> — only ${p.stock} pairs left</div>`
-  ).join('');
-
-  const tbody = document.getElementById('dash-tbody');
-  tbody.innerHTML = inv.length === 0
-    ? '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">No products yet</td></tr>'
-    : inv.map(p => {
-        let row = `<tr><td><strong>${p.name}</strong></td>`;
-        if (COLS.details.on) row += `<td style="color:var(--muted)">${p.details || '—'}</td>`;
-        if (COLS.stock.on)   row += `<td><strong>${p.stock || 0}</strong></td>`;
-        row += `<td>${stockBadge(p.stock)}</td></tr>`;
-        return row;
-      }).join('');
-}
-
-function stockBadge(stock) {
-  const s = +stock;
-  if (s <= 0) return '<span class="badge badge-out">✗ No Stock</span>';
-  if (s <= 24) return '<span class="badge badge-low">⚠ Low</span>';
-  return '<span class="badge badge-in">✓ Available</span>';
-}
-
-// ════════════════════════════════════
-// EXCEL UPLOAD — CORE LOGIC
-// ════════════════════════════════════
-function handleExcelUpload(input) {
-  const file = input.files[0];
-  if (!file) return;
-
-  // Try SheetJS first (most reliable)
-  if (typeof XLSX !== 'undefined') {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target.result);
-        const wb = XLSX.read(data, { type: 'array', cellText: true, cellDates: true });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        // Get all rows as arrays (raw values)
-        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', blankrows: false });
-        // Filter rows with at least one non-empty cell
-        const cleaned = rows.filter(r => r.some(c => String(c).trim() !== ''));
-        if (cleaned.length === 0) { toast('No data found in file', 'error'); return; }
-        setupMapper(cleaned, file.name);
-      } catch(err) {
-        toast('Error reading file: ' + err.message, 'error');
-      }
+    clients[token] = {
+      name,
+      page_id,
+      token,
+      access_token: token_input,
+      language: document.getElementById('f-lang').value,
+      fee: document.getElementById('f-fee').value || '0',
+      status: document.getElementById('f-status').value,
+      inventory: [],
+      history: [],
+      created_at: new Date().toISOString()
     };
-    reader.readAsArrayBuffer(file);
-  } else {
-    // Fallback: manual parse
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        parseExcelBufferFallback(e.target.result, file.name);
-      } catch(err) {
-        toast('SheetJS not loaded. Try saving file as CSV. Error: ' + err.message, 'error');
-      }
-    };
-    reader.readAsArrayBuffer(file);
+
+    saveClients();
+    clearForm();
+    toast(`Client created! Token: ${token}`, 'success');
+    setTimeout(() => showPage('tokens', document.querySelectorAll('.nav-item')[3]), 800);
   }
-}
 
-function parseExcelBufferFallback(buffer, filename) {
-  const ext = filename.split('.').pop().toLowerCase();
-  if (ext === 'csv') {
-    const text = new TextDecoder('utf-8').decode(buffer);
-    const rows = parseCSVText(text);
-    setupMapper(rows, filename);
-    return;
+  function deleteClient(token) {
+    if (!confirm('Delete this client?')) return;
+    delete clients[token];
+    saveClients();
+    renderDashboard();
+    renderClients();
+    renderTokens();
+    toast('Client deleted', 'error');
   }
-  parseXLSXBuffer(buffer, filename);
-}
 
-function parseCSVText(text) {
-  return text.split('\n')
-    .map(line => line.split(',').map(c => c.trim().replace(/^"|"$/g, '')))
-    .filter(row => row.some(c => c));
-}
+  function clearForm() {
+    ['f-name','f-page-id','f-token','f-fee','f-inventory','f-qa'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+  }
 
-function parseXLSXBuffer(buffer, filename) {
-  try {
-    const bytes = new Uint8Array(buffer);
+  function showPage(name, btn) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('page-' + name).classList.add('active');
+    if (btn) btn.classList.add('active');
+    if (name === 'dashboard') renderDashboard();
+    if (name === 'clients') renderClients();
+    if (name === 'tokens') renderTokens();
+  }
 
-    // Verify it's a ZIP (PK header)
-    if (bytes[0] !== 0x50 || bytes[1] !== 0x4B) {
-      // Not a ZIP — try as CSV
-      const text = new TextDecoder('utf-8').decode(buffer);
-      const rows = parseCSVText(text);
-      setupMapper(rows, filename);
+  function showExportOptions() {
+    const clientList = Object.values(clients);
+    if (clientList.length === 0) {
+      toast('No clients to export', 'error');
       return;
     }
 
-    // Extract files from ZIP
-    const zip = readZip(bytes);
-
-    // Get shared strings
-    const sharedStrings = parseSharedStrings(zip['xl/sharedStrings.xml'] || '');
-
-    // Try each sheet
-    let rows = [];
-    for (let i = 1; i <= 5; i++) {
-      const key = `xl/worksheets/sheet${i}.xml`;
-      if (zip[key]) {
-        rows = parseWorksheetXML(zip[key], sharedStrings);
-        if (rows.length > 1) break;
-      }
-    }
-
-    if (rows.length === 0) {
-      toast('No data found in Excel file', 'error');
-      return;
-    }
-
-    setupMapper(rows, filename);
-  } catch(err) {
-    toast('Could not read Excel. Try saving as CSV first. Error: ' + err.message, 'error');
-  }
-}
-
-// ────── ZIP READER ──────
-function readZip(bytes) {
-  const files = {};
-  let i = 0;
-
-  while (i < bytes.length - 4) {
-    // Local file header signature: 0x04034B50
-    if (bytes[i] !== 0x50 || bytes[i+1] !== 0x4B || bytes[i+2] !== 0x03 || bytes[i+3] !== 0x04) {
-      i++;
-      continue;
-    }
-
-    // Skip to filename length
-    const compMethod = bytes[i+8] | (bytes[i+9] << 8);
-    const compSize   = bytes[i+18] | (bytes[i+19] << 8) | (bytes[i+20] << 16) | (bytes[i+21] << 24);
-    const fnLen      = bytes[i+26] | (bytes[i+27] << 8);
-    const extraLen   = bytes[i+28] | (bytes[i+29] << 8);
-
-    const fnBytes  = bytes.slice(i+30, i+30+fnLen);
-    const filename = new TextDecoder('utf-8').decode(fnBytes);
-    const dataStart = i + 30 + fnLen + extraLen;
-    const dataEnd   = dataStart + compSize;
-
-    if (dataEnd <= bytes.length) {
-      const compressed = bytes.slice(dataStart, dataEnd);
-      try {
-        let content;
-        if (compMethod === 0) {
-          // Stored (no compression)
-          content = new TextDecoder('utf-8').decode(compressed);
-        } else if (compMethod === 8) {
-          // Deflate — use DecompressionStream if available
-          content = inflateToText(compressed);
-        }
-        if (content !== undefined) files[filename] = content;
-      } catch(e) {}
-    }
-
-    i = dataEnd > i ? dataEnd : i + 1;
-  }
-
-  return files;
-}
-
-function inflateToText(compressed) {
-  // Try using DecompressionStream (modern browsers)
-  // This is synchronous via a workaround
-  try {
-    const ds = new DecompressionStream('deflate-raw');
-    const writer = ds.writable.getWriter();
-    const reader = ds.readable.getReader();
-
-    writer.write(compressed);
-    writer.close();
-
-    // Collect chunks synchronously (not ideal but works for small files)
-    let result = '';
-    let done = false;
-
-    reader.read().then(function process({value, done: d}) {
-      if (value) result += new TextDecoder('utf-8').decode(value);
-      done = d;
-      if (!d) return reader.read().then(process);
+    let options = `<div style="padding:1rem;">
+      <div class="form-group full">
+        <label>Select Client to Export</label>
+        <select id="export-client" style="width:100%; padding:0.75rem; background:var(--bg); border:1px solid var(--border2); color:var(--text); border-radius:6px;">
+          <option value="">-- All Clients (customers.json) --</option>`;
+    
+    clientList.forEach(c => {
+      options += `<option value="${c.token}">${c.name}</option>`;
     });
 
-    // Synchronous wait via busy loop (max 2s)
-    const start = Date.now();
-    while (!done && Date.now() - start < 2000) {
-      // busy wait
-    }
+    options += `</select>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:1rem;">
+        <button class="btn btn-primary" style="flex:1;" onclick="downloadSelectedJSON()">Download</button>
+        <button class="btn btn-ghost" style="flex:1;" onclick="closeExportModal()">Cancel</button>
+      </div>
+    </div>`;
 
-    return result;
-  } catch(e) {
-    // Fallback: simple raw inflate attempt
-    return new TextDecoder('utf-8').decode(compressed);
-  }
-}
-
-// ────── SHARED STRINGS ──────
-function parseSharedStrings(xml) {
-  if (!xml) return [];
-  const strings = [];
-  const re = /<si>([\s\S]*?)<\/si>/g;
-  let m;
-  while ((m = re.exec(xml)) !== null) {
-    const inner = m[1];
-    const parts = [];
-    const tr = /<t(?:[^>]*)>([\s\S]*?)<\/t>/g;
-    let tm;
-    while ((tm = tr.exec(inner)) !== null) {
-      parts.push(tm[1].replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&#xD;/g,''));
-    }
-    strings.push(parts.join(''));
-  }
-  return strings;
-}
-
-// ────── WORKSHEET XML ──────
-function parseWorksheetXML(xml, strings) {
-  if (!xml) return [];
-  const rows = [];
-
-  // Find all rows
-  const rowRe = /<row[^>]*>([\s\S]*?)<\/row>/g;
-  let rm;
-  while ((rm = rowRe.exec(xml)) !== null) {
-    const rowXml = rm[1];
-    const cells = [];
-
-    // Find all cells
-    const cellRe = /<c\s([^>]*)>([\s\S]*?)<\/c>/g;
-    let cm;
-    while ((cm = cellRe.exec(rowXml)) !== null) {
-      const attrs = cm[1];
-      const inner = cm[2];
-
-      // Get cell reference (like A1, B2 etc.)
-      const rMatch = attrs.match(/r="([A-Z]+)(\d+)"/);
-      const colStr = rMatch ? rMatch[1] : '';
-      const colIdx = colStrToIdx(colStr);
-
-      // Get type
-      const tMatch = attrs.match(/t="([^"]*)"/);
-      const type = tMatch ? tMatch[1] : '';
-
-      // Get value
-      const vMatch = inner.match(/<v>([\s\S]*?)<\/v>/);
-      let val = '';
-      if (vMatch) {
-        if (type === 's') {
-          const idx = parseInt(vMatch[1]);
-          val = strings[idx] !== undefined ? strings[idx] : '';
-        } else if (type === 'inlineStr') {
-          const tM = inner.match(/<t>([\s\S]*?)<\/t>/);
-          val = tM ? tM[1] : '';
-        } else {
-          val = vMatch[1];
-        }
-      }
-
-      // Expand array to fit column index
-      while (cells.length <= colIdx) cells.push('');
-      cells[colIdx] = val.toString().trim();
-    }
-
-    if (cells.some(c => c !== '')) rows.push(cells);
+    const modal = document.createElement('div');
+    modal.id = 'export-modal';
+    modal.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:100; display:flex; align-items:center; justify-content:center;';
+    modal.innerHTML = `<div style="background:var(--surface); border:1px solid var(--border); border-radius:10px; width:400px; max-width:90vw;">
+      <div style="padding:1rem; border-bottom:1px solid var(--border);">
+        <div style="font-size:15px; font-weight:600;">Export JSON</div>
+      </div>
+      ${options}
+    </div>`;
+    document.body.appendChild(modal);
   }
 
-  return rows;
-}
+  function downloadSelectedJSON() {
+    const select = document.getElementById('export-client');
+    const selectedToken = select.value;
 
-function colStrToIdx(col) {
-  let n = 0;
-  for (let i = 0; i < col.length; i++) {
-    n = n * 26 + (col.charCodeAt(i) - 64);
-  }
-  return n - 1;
-}
-
-// ════════════════════════════════════
-// COLUMN MAPPER UI
-// ════════════════════════════════════
-function setupMapper(rows, filename) {
-  // Find header row — look for row with keywords like "article", "stock", "price", "sl", "name"
-  // This handles files with title rows before the actual header (like Victory Footwear)
-  let headerIdx = 0;
-  const headerKeywords = ['article', 'stock', 'price', 'name', 'product', 'item', 'sl', 'qty', 'detail', 'remark', 'status'];
-  
-  for (let i = 0; i < Math.min(15, rows.length); i++) {
-    const row = rows[i];
-    const rowText = row.map(c => String(c || '').toLowerCase()).join(' ');
-    const matchCount = headerKeywords.filter(kw => rowText.includes(kw)).length;
-    if (matchCount >= 2) { headerIdx = i; break; }
-  }
-  // Fallback: first row with 3+ text cells
-  if (headerIdx === 0) {
-    for (let i = 0; i < Math.min(10, rows.length); i++) {
-      const textCells = rows[i].filter(c => c && isNaN(String(c).trim())).length;
-      if (textCells >= 3) { headerIdx = i; break; }
-    }
-  }
-
-  XL_HEADERS = rows[headerIdx].map(h => String(h || '').trim());
-  XL_ROWS = rows.slice(headerIdx + 1).filter(row =>
-    row.some(c => String(c || '').trim() !== '')
-  );
-
-  const totalData = XL_ROWS.filter(r => r.some(c => String(c||'').trim() !== '')).length;
-  document.getElementById('mapper-info').textContent =
-    `File: ${filename} — Header at row ${headerIdx+1} — ${totalData} data rows found`;
-
-  // Build dropdown options
-  const opts = '<option value="">— None —</option>' +
-    XL_HEADERS.map((h, i) => `<option value="${i}">${h || '(Column ' + (i+1) + ')'}</option>`).join('');
-
-  ['map-name','map-stock','map-price','map-details'].forEach(id => {
-    document.getElementById(id).innerHTML = opts;
-  });
-
-  autoDetect();
-  refreshPreview();
-
-  document.getElementById('mapper').style.display = 'block';
-  document.getElementById('mapper').scrollIntoView({ behavior:'smooth' });
-}
-
-function autoDetect() {
-  const h = XL_HEADERS.map(x => x.toLowerCase());
-
-  function pick(keywords) {
-    for (const kw of keywords) {
-      const idx = h.findIndex(x => x.includes(kw));
-      if (idx >= 0) return String(idx);
-    }
-    return '';
-  }
-
-  // Match to your exact Victory Footwear column names:
-  // "SL", "Article No :", "Finishing goods Stock  Pair", "Total CTN :",
-  // "Today's Received Pair", " Stock Pair", "Todays Delivery Pair ",
-  // "Total Stock Pair", "Total Stock CTN :", "Status",
-  // "Unit Price    (Per Pair)", "Total Price", "Remarks"
-
-  document.getElementById('map-name').value    = pick(['article', 'product', 'item', 'name', 'sl']);
-  document.getElementById('map-stock').value   = pick(['total stock pair', 'finishing goods', 'total stock', 'stock pair', 'stock', 'qty', 'quantity', 'pair']);
-  document.getElementById('map-price').value   = pick(['unit price', 'price', 'cost', 'amount']);
-  document.getElementById('map-details').value = pick(['remark', 'status', 'category', 'detail', 'description', 'type']);
-}
-
-function refreshPreview() {
-  const nameIdx  = document.getElementById('map-name').value;
-  const stockIdx = document.getElementById('map-stock').value;
-  const priceIdx = document.getElementById('map-price').value;
-  const detIdx   = document.getElementById('map-details').value;
-
-  if (nameIdx === '') {
-    document.getElementById('preview-box').innerHTML = '<div style="padding:12px;color:var(--muted);font-size:12px">Select a Name column to see preview</div>';
-    return;
-  }
-
-  const preview = XL_ROWS.filter(r => r[+nameIdx]).slice(0, 5);
-  const cols = [
-    { label: 'Article / Product Name', idx: nameIdx },
-    ...(stockIdx !== '' ? [{ label: 'Stock (Pair)', idx: stockIdx }] : []),
-    ...(priceIdx !== '' ? [{ label: 'Unit Price', idx: priceIdx }] : []),
-    ...(detIdx   !== '' ? [{ label: 'Category / Remarks', idx: detIdx }] : []),
-  ];
-
-  let html = '<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr>';
-  cols.forEach(c => { html += `<th style="background:var(--bg3);padding:6px 8px;text-align:left;color:var(--muted);border-bottom:1px solid var(--border)">${c.label}</th>`; });
-  html += '</tr></thead><tbody>';
-  preview.forEach((row, ri) => {
-    html += `<tr style="background:${ri%2===0?'var(--bg2)':'var(--bg3)'}">`;
-    cols.forEach(c => {
-      const val = row[+c.idx];
-      const display = (val === '' || val === null || val === undefined) ? '—' : val;
-      html += `<td style="padding:6px 8px;border-bottom:1px solid var(--border)">${display}</td>`;
-    });
-    html += '</tr>';
-  });
-  html += '</tbody></table>';
-  document.getElementById('preview-box').innerHTML = html;
-
-  const validCount = XL_ROWS.filter(r => r[+nameIdx] && r[+nameIdx].toString().trim()).length;
-  document.getElementById('preview-count').textContent = `Will import ${validCount} products`;
-}
-
-function confirmImport() {
-  const nameIdx  = +document.getElementById('map-name').value;
-  const stockIdx = document.getElementById('map-stock').value;
-  const priceIdx = document.getElementById('map-price').value;
-  const detIdx   = document.getElementById('map-details').value;
-
-  if (isNaN(nameIdx)) { toast('Select a Name/Article column', 'error'); return; }
-
-  const incoming = XL_ROWS
-    .filter(row => row[nameIdx] && row[nameIdx].toString().trim())
-    .map(row => ({
-      name:    String(row[nameIdx] ?? '').trim(),
-      price:   priceIdx !== '' ? String(row[+priceIdx] ?? '').trim() : '',
-      details: detIdx   !== '' ? String(row[+detIdx]   ?? '').trim() : '',
-      stock:   stockIdx !== '' ? (parseInt(row[+stockIdx]) || 0) : 0
-    }));
-
-  if (incoming.length === 0) { toast('No valid products found', 'error'); return; }
-
-  CLIENT.inventory = CLIENT.inventory || [];
-  let added = 0, merged = 0;
-
-  for (const p of incoming) {
-    const existing = CLIENT.inventory.find(x => x.name.toLowerCase() === p.name.toLowerCase());
-    if (existing) {
-      existing.stock = (existing.stock || 0) + p.stock;
-      if (p.price) existing.price = p.price;
-      if (p.details) existing.details = p.details;
-      merged++;
+    if (selectedToken === '') {
+      // Download all clients
+      const output = {
+        pages: Object.values(clients).map(c => ({
+          page_id: c.page_id,
+          access_token: c.access_token,
+          business_name: c.name,
+          language: c.language,
+          status: c.status,
+          inventory: c.inventory || [],
+          qa: c.qa || []
+        }))
+      };
+      const blob = new Blob([JSON.stringify(output, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'customers.json';
+      a.click();
+      toast('customers.json downloaded!', 'success');
     } else {
-      CLIENT.inventory.push(p);
-      added++;
+      // Download single client
+      const client = clients[selectedToken];
+      const output = {
+        page_id: client.page_id,
+        access_token: client.access_token,
+        business_name: client.name,
+        language: client.language,
+        status: client.status,
+        inventory: client.inventory || [],
+        qa: client.qa || []
+      };
+      const blob = new Blob([JSON.stringify(output, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${client.name.replace(/\s+/g, '_')}.json`;
+      a.click();
+      toast(`${client.name}.json downloaded!`, 'success');
     }
+    closeExportModal();
   }
 
-  addHistory('Excel Import', `Imported from Excel: ${added} new, ${merged} updated`);
-  saveClient();
-  cancelMapper();
+  function closeExportModal() {
+    const modal = document.getElementById('export-modal');
+    if (modal) modal.remove();
+  }
+
+  function exportJSON() {
+    showExportOptions();
+  }
+
+  function exportClientsCSV() {
+    const clientList = Object.values(clients);
+    let csv = 'Business,Token,Monthly Fee,Status,Created\n';
+    clientList.forEach(c => {
+      csv += `"${c.name}","${c.token}",${c.fee},"${c.status}","${new Date(c.created_at).toLocaleDateString()}"\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'alap_clients.csv';
+    a.click();
+    toast('CSV downloaded!', 'success');
+  }
+
+  function downloadClientPanel() {
+    fetch('/mnt/user-data/outputs/Alap_Client_Panel.html')
+      .then(r => r.text())
+      .then(html => {
+        const blob = new Blob([html], { type: 'text/html' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'Alap_Client_Panel.html';
+        a.click();
+        toast('Client Panel downloaded!', 'success');
+      })
+      .catch(() => {
+        toast('Client Panel file not found. Check setup guide.', 'error');
+      });
+  }
+
+  function copyToken(token) {
+    navigator.clipboard.writeText(token);
+    toast('Token copied!', 'success');
+  }
+
+  function clearAllData() {
+    if (!confirm('Delete ALL data? Cannot undo!')) return;
+    clients = {};
+    localStorage.removeItem('alap_clients');
+    renderDashboard();
+    toast('All data deleted', 'error');
+  }
+
+  function toggleField(id) {
+    const input = document.getElementById(id);
+    input.type = input.type === 'password' ? 'text' : 'password';
+  }
+
+  function saveClients() {
+    localStorage.setItem('alap_clients', JSON.stringify(clients));
+  }
+
+  function toast(msg, type = 'success') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'toast ' + type + ' show';
+    setTimeout(() => el.classList.remove('show'), 3000);
+  }
+
   renderDashboard();
-  renderInventory();
-  renderHistory();
-  toast(`✅ Done! ${added} added, ${merged} stock updated`, 'success');
-}
-
-function cancelMapper() {
-  document.getElementById('mapper').style.display = 'none';
-  document.getElementById('xl-file').value = '';
-  XL_ROWS = [];
-  XL_HEADERS = [];
-}
-
-// ════════════════════════════════════
-// INVENTORY RENDER
-// ════════════════════════════════════
-function renderInventory() {
-  if (!CLIENT) return;
-  const query = (document.getElementById('search')?.value || '').toLowerCase();
-  const inv = (CLIENT.inventory || []).filter(p =>
-    !query || p.name.toLowerCase().includes(query) || (p.details||'').toLowerCase().includes(query)
-  );
-
-  const tbody = document.getElementById('inv-tbody');
-  document.getElementById('inv-empty').style.display = inv.length === 0 ? 'block' : 'none';
-
-  tbody.innerHTML = inv.map((p, i) => {
-    let row = `<tr>
-      <td style="color:var(--muted)">${i+1}</td>
-      <td><strong>${p.name}</strong></td>`;
-    if (COLS.details.on) row += `<td style="color:var(--muted)">${p.details || '—'}</td>`;
-    if (COLS.price.on)   row += `<td>${p.price ? '৳' + p.price : '—'}</td>`;
-    if (COLS.stock.on)   row += `<td>
-        <input type="number" value="${p.stock || 0}" onchange="updateStock('${p.name}', this.value)"
-          style="width:70px;padding:4px 6px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px">
-      </td>`;
-    if (COLS.extra1.on && COLS.extra1.label) row += `<td style="color:var(--muted)">${p.extra1 || '—'}</td>`;
-    if (COLS.extra2.on && COLS.extra2.label) row += `<td style="color:var(--muted)">${p.extra2 || '—'}</td>`;
-    row += `<td>${stockBadge(p.stock)}</td>
-      <td><button class="btn btn-ghost btn-sm" style="color:var(--error);border-color:var(--error)" onclick="deleteProduct('${p.name}')">Delete</button></td>
-    </tr>`;
-    return row;
-  }).join('');
-}
-
-function updateStock(name, val) {
-  const p = CLIENT.inventory.find(x => x.name === name);
-  if (p) { p.stock = parseInt(val) || 0; saveClient(); renderDashboard(); }
-}
-
-function deleteProduct(name) {
-  if (!confirm(`Delete "${name}"?`)) return;
-  CLIENT.inventory = CLIENT.inventory.filter(p => p.name !== name);
-  addHistory('Delete', `Deleted product: ${name}`);
-  saveClient();
-  renderDashboard();
-  renderInventory();
-  renderHistory();
-  toast('Deleted', 'error');
-}
-
-function manualAdd() {
-  const name = document.getElementById('m-name').value.trim();
-  if (!name) { toast('Enter product name', 'error'); return; }
-  CLIENT.inventory = CLIENT.inventory || [];
-  const newStock   = parseInt(document.getElementById('m-stock').value) || 0;
-  const newPrice   = document.getElementById('m-price').value.trim();
-  const newDetails = document.getElementById('m-details').value.trim();
-  const newExtra1  = (document.getElementById('m-extra1')?.value || '').trim();
-  const newExtra2  = (document.getElementById('m-extra2')?.value || '').trim();
-
-  // Check if product already exists (case-insensitive)
-  const existing = CLIENT.inventory.find(p => p.name.toLowerCase() === name.toLowerCase());
-  if (existing) {
-    // Merge: add stock, update price/details if provided
-    const oldStock = existing.stock || 0;
-    existing.stock = oldStock + newStock;
-    if (newPrice)   existing.price   = newPrice;
-    if (newDetails) existing.details = newDetails;
-    if (newExtra1)  existing.extra1  = newExtra1;
-    if (newExtra2)  existing.extra2  = newExtra2;
-    addHistory('Update', `Merged stock for ${name}: ${oldStock} + ${newStock} = ${existing.stock}`);
-    toast(`✅ Stock merged! ${name} now has ${existing.stock}`, 'success');
-  } else {
-    CLIENT.inventory.push({ name, price: newPrice, details: newDetails, stock: newStock, extra1: newExtra1, extra2: newExtra2 });
-    addHistory('Add', `Added product: ${name} (stock: ${newStock})`);
-    toast('✅ Product added!', 'success');
-  }
-
-  saveClient();
-  ['m-name','m-price','m-details','m-stock','m-extra1','m-extra2'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
-  renderDashboard();
-  renderInventory();
-  renderHistory();
-}
-
-// ════════════════════════════════════
-// AI PRODUCT ADD
-// ════════════════════════════════════
-async function aiAddProduct() {
-  const desc = document.getElementById('ai-desc').value.trim();
-  if (!desc) { toast('Describe a product first', 'error'); return; }
-
-  // Smart LOCAL parser — no API needed, works offline
-  // Extracts: article/name, price (numbers with taka/৳), stock (pairs/pieces/pcs)
-  let name = '', price = '', details = '', stock = 0;
-
-  // Extract price — look for number near taka/৳/price/cost keywords
-  const priceMatch = desc.match(/(?:price[:\s]*|cost[:\s]*|৳\s*|taka\s*)(\d+[\d,]*)|(\d+[\d,]*)\s*(?:taka|৳|tk)/i);
-  if (priceMatch) price = (priceMatch[1] || priceMatch[2]).replace(/,/g, '');
-
-  // Extract stock — look for number near stock/pair/pcs/pieces keywords
-  const stockMatch = desc.match(/(\d+)\s*(?:pair|pairs|pcs|pieces|stock|units?|nos?)\b|(?:stock[:\s]*|pairs?[:\s]*)(\d+)/i);
-  if (stockMatch) stock = parseInt(stockMatch[1] || stockMatch[2]) || 0;
-
-  // Extract article number — patterns like 8-303, A-2039, 2039, etc.
-  const articleMatch = desc.match(/\b(\d+[-–]\d+(?:[-–]\d+)?|\b[A-Z]\d+|\b\d{4,})\b/i);
-  if (articleMatch) name = articleMatch[1];
-
-  // Extract category/type keywords (ladies, gents, kids + shoe/boot/sandal/pu/leather etc.)
-  const typeWords = desc.match(/(?:ladies|gents|mens|kids|children|womens?|boys?|girls?)\s+(?:shoe|boot|sandal|slipper|loafer|sneaker|pu|leather|canvas)?|(?:shoe|boot|sandal|slipper|pu|leather|canvas)\s*(?:article|no)?/gi);
-  if (typeWords) details = typeWords.join(' ').trim().replace(/\s+/g, ' ');
-
-  // If no article number found, extract the first meaningful word/phrase as name
-  if (!name) {
-    const cleaned = desc.replace(/\d+\s*(?:taka|pairs?|pcs|pieces|৳)/gi, '').trim();
-    name = cleaned.split(/[,.:]/)[0].trim().slice(0, 30);
-  }
-
-  if (!name) { toast('Could not extract product info. Try: "Article 8-303, price 500, 24 pairs"', 'error'); return; }
-
-  CLIENT.inventory = CLIENT.inventory || [];
-
-  // Merge if exists
-  const existing = CLIENT.inventory.find(p => p.name.toLowerCase() === name.toLowerCase());
-  if (existing) {
-    existing.stock = (existing.stock || 0) + stock;
-    if (price) existing.price = price;
-    if (details) existing.details = details;
-    addHistory('AI Add', `Merged via AI: ${name}, stock +${stock}`);
-    toast(`✅ Merged! ${name} now has ${existing.stock} pairs`, 'success');
-  } else {
-    CLIENT.inventory.push({ name, price, details, stock });
-    addHistory('AI Add', `Added via AI: ${name} (${stock} pairs)`);
-    toast('✅ Product added!', 'success');
-  }
-
-  saveClient();
-  document.getElementById('ai-desc').value = '';
-  renderDashboard();
-  renderInventory();
-  renderHistory();
-}
-
-// ════════════════════════════════════
-// Q&A
-// ════════════════════════════════════
-async function extractQA() {
-  const text = document.getElementById('qa-raw').value.trim();
-  if (!text) { toast('Paste conversation first', 'error'); return; }
-
-  // Smart local Q&A extractor — no API needed
-  // Looks for patterns: "Customer: X\nYou/Me/I: Y" or "Q: X\nA: Y"
-  let q = '', a = '';
-
-  // Pattern 1: Customer/User line + reply line
-  const m1 = text.match(/(?:customer|user|they|he|she)[:\s]+(.+?)[\n\r]+(?:you|me|i|we|reply|answer)[:\s]+(.+)/is);
-  if (m1) { q = m1[1].trim(); a = m1[2].trim(); }
-
-  // Pattern 2: Q:/A: format
-  if (!q) {
-    const m2 = text.match(/Q[:\s]+(.+?)[\n\r]+A[:\s]+(.+)/is);
-    if (m2) { q = m2[1].trim(); a = m2[2].trim(); }
-  }
-
-  // Pattern 3: Question mark detection — first sentence with ? is the question
-  if (!q) {
-    const lines = text.split(/[\n\r]+/).map(l => l.trim()).filter(Boolean);
-    const qLine = lines.find(l => l.includes('?'));
-    const aLine = lines.find(l => !l.includes('?') && l.length > 5);
-    if (qLine && aLine) { q = qLine; a = aLine; }
-  }
-
-  // Pattern 4: Just two lines — first is Q, second is A
-  if (!q) {
-    const lines = text.split(/[\n\r]+/).map(l => l.trim()).filter(l => l.length > 3);
-    if (lines.length >= 2) { q = lines[0]; a = lines[1]; }
-  }
-
-  if (!q || !a) {
-    toast('Could not extract. Try format: "Customer: question?\\nYou: answer"', 'error');
-    return;
-  }
-
-  CLIENT.qa = CLIENT.qa || [];
-  CLIENT.qa.push({ q, a });
-  saveClient();
-  document.getElementById('qa-raw').value = '';
-  renderQA();
-  toast('✅ Q&A extracted and added!', 'success');
-}
-
-function addManualQA() {
-  const q = document.getElementById('mq').value.trim();
-  const a = document.getElementById('ma').value.trim();
-  if (!q || !a) { toast('Enter both question and answer', 'error'); return; }
-  CLIENT.qa = CLIENT.qa || [];
-  CLIENT.qa.push({ q, a });
-  saveClient();
-  document.getElementById('mq').value = '';
-  document.getElementById('ma').value = '';
-  renderQA();
-  toast('✅ Q&A added!', 'success');
-}
-
-function deleteQA(i) {
-  CLIENT.qa.splice(i, 1);
-  saveClient();
-  renderQA();
-}
-
-function renderQA() {
-  if (!CLIENT) return;
-  const qa = CLIENT.qa || [];
-  document.getElementById('qa-empty').style.display = qa.length === 0 ? 'block' : 'none';
-  document.getElementById('qa-list').innerHTML = qa.map((item, i) => `
-    <div class="qa-item">
-      <div class="qa-q">Q: ${item.q}</div>
-      <div class="qa-a">A: ${item.a}</div>
-      <button class="btn btn-danger btn-sm" onclick="deleteQA(${i})">Delete</button>
-    </div>
-  `).join('');
-}
-
-// ════════════════════════════════════
-// HISTORY
-// ════════════════════════════════════
-function renderHistory() {
-  if (!CLIENT) return;
-  const hist = CLIENT.history || [];
-  document.getElementById('hist-empty').style.display = hist.length === 0 ? 'block' : 'none';
-  document.getElementById('hist-list').innerHTML = hist.map(h => `
-    <div style="padding:8px 10px;border-left:3px solid var(--primary);background:var(--bg3);border-radius:0 4px 4px 0;margin-bottom:6px">
-      <div style="font-size:12px;font-weight:600;color:var(--text)">${h.action} — ${h.detail}</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:2px">${h.time}</div>
-    </div>
-  `).join('');
-}
-
-// ════════════════════════════════════
-// DOWNLOAD JSON & TEMPLATE
-// ════════════════════════════════════
-function downloadJSON() {
-  if (!CLIENT) return;
-  const data = { business_name: CLIENT.name, token: CLIENT.token, inventory: CLIENT.inventory || [], qa: CLIENT.qa || [] };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = CLIENT.name.replace(/\s+/g,'_') + '_inventory.json';
-  a.click();
-  toast('JSON downloaded!', 'success');
-}
-
-function downloadTemplate() {
-  const csv = [
-    ['Article No', 'Total Stock Pair', 'Unit Price (Per Pair)', 'Category / Remarks'],
-    ['8-303', '24', '', 'Gents PU'],
-    ['8-403', '48', '', 'Gents PU'],
-    ['5-303', '0', '', 'Ladies PU'],
-  ].map(row => row.join(',')).join('\n');
-  const blob = new Blob([csv], { type:'text/csv' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'Alap_Inventory_Template.csv';
-  a.click();
-}
-
-// ════════════════════════════════════
-// SERVER SYNC
-// ════════════════════════════════════
-async function apiCall(path, method='GET', body=null) {
-  const keys = CLIENT.apiKeys || {};
-  const url  = (keys.serverUrl || '').replace(/\/$/, '') + path;
-  const token = keys.panelToken || '';
-  if (!url || url === path) { toast('Set your Railway URL in Integrations tab', 'warn'); return null; }
-  try {
-    const opts = { method, headers: { 'Content-Type':'application/json', 'X-Panel-Token': token } };
-    if (body) opts.body = JSON.stringify(body);
-    const r = await fetch(url, opts);
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return await r.json();
-  } catch(e) {
-    toast('Server error: ' + e.message, 'error'); return null;
-  }
-}
-
-async function syncFromServer() {
-  toast('Syncing from server...', 'success');
-  const data = await apiCall('/api/sync', 'POST');
-  if (!data) return;
-  CLIENT.orders    = data.orders    || CLIENT.orders    || [];
-  CLIENT.leads     = data.leads     || CLIENT.leads     || [];
-  CLIENT.inventory = data.inventory || CLIENT.inventory || [];
-  CLIENT.blacklist = data.blacklist || CLIENT.blacklist || [];
-  saveClient();
-  renderOrders();
-  renderLeads();
-  renderBlacklist();
-  renderDashboard();
-  renderInventory();
-  toast(`✅ Synced! ${CLIENT.orders.length} orders, ${CLIENT.leads.length} leads`, 'success');
-}
-
-// ════════════════════════════════════
-// ORDERS
-// ════════════════════════════════════
-function renderOrders() {
-  const filter = document.getElementById('order-filter')?.value || '';
-  let orders = (CLIENT.orders || []).slice().reverse();
-  if (filter) orders = orders.filter(o => o.status === filter);
-
-  const el = document.getElementById('orders-list');
-  if (!el) return;
-
-  if (!orders.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">📦</div><div>No orders. Click 🔄 Sync to pull from server.</div></div>';
-    return;
-  }
-
-  el.innerHTML = orders.map(o => `
-    <div class="order-card">
-      <div class="order-header">
-        <span class="order-id">${o.id}</span>
-        <span class="status-badge status-${o.status || 'pending'}">${o.status || 'pending'}</span>
-      </div>
-      <div class="order-items">${(o.items || []).map(i => `${i.name} × ${i.qty}`).join(' &nbsp;|&nbsp; ')}</div>
-      <div style="display:flex;gap:16px;font-size:11px;color:var(--muted);margin-bottom:6px">
-        <span>👤 ${o.name}</span>
-        <span>📞 ${o.phone}</span>
-        <span>📍 ${o.address ? o.address.substring(0,40) : '—'}</span>
-        <span>🕐 ${o.created_at || ''}</span>
-      </div>
-      <div class="order-total">৳${o.total || 0} <span style="font-size:11px;color:var(--muted);font-weight:400">(Delivery: ৳${o.delivery_fee || 0} — ${o.delivery_zone || ''})</span></div>
-      ${o.courier_tracking ? `<div style="font-size:11px;color:var(--primary);margin-top:4px">📦 Tracking: ${o.courier_tracking}</div>` : ''}
-      ${o.transaction_id ? `<div style="font-size:11px;color:var(--success);margin-top:2px">💳 TrxID: ${o.transaction_id}</div>` : ''}
-      <div class="order-actions">
-        ${o.status === 'confirmed' ? `
-          <button class="btn btn-primary btn-sm" onclick="bookCourier('${o.id}','steadfast')">📦 Steadfast</button>
-          <button class="btn btn-ghost btn-sm" onclick="bookCourier('${o.id}','pathao')">🛵 Pathao</button>
-          <button class="btn btn-ghost btn-sm" onclick="bookCourier('${o.id}','paperfly')">✈ Paperfly</button>
-        ` : ''}
-        ${o.status === 'dispatched' ? `<button class="btn btn-success btn-sm" onclick="markDelivered('${o.id}')">✅ Mark Delivered</button>` : ''}
-        <button class="btn btn-ghost btn-sm" onclick="copyAddress('${o.id}')">📋 Copy Address</button>
-      </div>
-    </div>
-  `).join('');
-
-  // Update dashboard order count
-  const el2 = document.getElementById('stat-orders');
-  if (el2) el2.textContent = (CLIENT.orders || []).length;
-}
-
-async function bookCourier(orderId, courier) {
-  toast(`Booking ${courier}...`, 'success');
-  const result = await apiCall('/api/book-courier', 'POST', { order_id: orderId, courier });
-  if (!result) return;
-  if (result.success) {
-    toast(`✅ ${courier} booked! Tracking: ${result.tracking_code}`, 'success');
-    await syncFromServer();
-  } else {
-    toast('Booking failed: ' + result.error, 'error');
-  }
-}
-
-async function markDelivered(orderId) {
-  const r = await apiCall(`/api/orders/${orderId}/status`, 'POST', { status: 'delivered' });
-  if (r?.ok) { toast('✅ Marked as delivered', 'success'); await syncFromServer(); }
-}
-
-function copyAddress(orderId) {
-  const order = (CLIENT.orders || []).find(o => o.id === orderId);
-  if (!order) return;
-  const text = `Name: ${order.name}\nPhone: ${order.phone}\nAddress: ${order.address}`;
-  navigator.clipboard.writeText(text).then(() => toast('Address copied!', 'success'));
-}
-
-// ════════════════════════════════════
-// INTEGRATIONS
-// ════════════════════════════════════
-const INT_FIELDS = ['serverUrl','panelToken','pageId','groqKey','bkashNumber','nagadNumber',
-  'steadfastKey','steadfastSecret',
-  'pathaoClientId','pathaoClientSecret','pathaoUsername','pathaoPassword','pathaoStoreId',
-  'paperflyKey','paperflySecret',
-  'whatsappToken','whatsappPhoneId','googleVisionKey'];
-
-function loadIntegrations() {
-  const keys = CLIENT.apiKeys || {};
-  INT_FIELDS.forEach(k => {
-    const el = document.getElementById('int-' + k);
-    if (el) el.value = keys[k] || '';
-  });
-}
-
-function saveIntegrations() {
-  CLIENT.apiKeys = CLIENT.apiKeys || {};
-  INT_FIELDS.forEach(k => {
-    const el = document.getElementById('int-' + k);
-    if (el) CLIENT.apiKeys[k] = el.value.trim();
-  });
-  saveClient();
-  document.getElementById('int-status').textContent = '✅ Keys saved locally.';
-  toast('✅ Integration keys saved!', 'success');
-}
-
-async function pushIntegrationsToServer() {
-  saveIntegrations();
-  // Push current inventory + apiKeys to server so server has the latest apiKeys
-  const r = await apiCall('/api/inventory', 'POST', {
-    inventory: CLIENT.inventory || [],
-    apiKeys: CLIENT.apiKeys || {}
-  });
-  if (r?.ok) {
-    toast('✅ Keys pushed to server!', 'success');
-    document.getElementById('int-status').textContent = '✅ Keys saved & pushed to server.';
-  }
-}
-
-// ════════════════════════════════════
-// MARKETING
-// ════════════════════════════════════
-async function sendBroadcast() {
-  const msg    = document.getElementById('wa-msg').value.trim();
-  const phones = document.getElementById('wa-phones').value
-    .split(/[\n,]/).map(p => p.trim()).filter(Boolean);
-  if (!msg || !phones.length) { toast('Message and phone numbers required', 'error'); return; }
-  const el = document.getElementById('broadcast-result');
-  el.textContent = 'Sending...';
-  const r = await apiCall('/api/broadcast', 'POST', { message: msg, recipients: phones });
-  if (r) el.textContent = `✅ Sent: ${r.sent}  ❌ Failed: ${r.failed}`;
-}
-
-function saveCommentTriggers() {
-  const raw = document.getElementById('comment-triggers').value;
-  const triggers = raw.split(',').map(t => t.trim()).filter(Boolean);
-  CLIENT.comment_triggers = triggers;
-  saveClient();
-  toast('✅ Comment triggers saved!', 'success');
-}
-
-function loadCommentTriggers() {
-  const el = document.getElementById('comment-triggers');
-  if (el) el.value = (CLIENT.comment_triggers || ['price','দাম','কত','how much','available','আছে']).join(', ');
-}
-
-function renderLeads() {
-  const el = document.getElementById('leads-list');
-  if (!el) return;
-  const leads = (CLIENT.leads || []).slice().reverse();
-  if (!leads.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">🎯</div><div>No leads yet.</div></div>';
-    return;
-  }
-  el.innerHTML = leads.map(l => `
-    <div class="lead-card">
-      <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600">${l.name || l.sender_id || 'Unknown'} <span style="color:var(--muted);font-weight:400">${l.created_at || ''}</span></div>
-      <div style="font-size:11px;color:var(--muted);margin-top:2px">Source: ${l.source} &nbsp;|&nbsp; ${l.phone || ''} &nbsp;|&nbsp; ${l.comment || l.email || ''}</div>
-    </div>
-  `).join('');
-}
-
-// ════════════════════════════════════
-// PROFIT TRACKER
-// ════════════════════════════════════
-async function loadProfit() {
-  const r = await apiCall('/api/profit', 'GET');
-  if (!r) {
-    // Fallback: calculate from local orders
-    const orders = CLIENT.orders || [];
-    const expenses = CLIENT.expenses || [];
-    const gross = orders.reduce((s,o) => s + (o.total || 0), 0);
-    const exp   = expenses.reduce((s,e) => s + (e.amount || 0), 0);
-    setProfit(gross, exp, gross - exp, orders.length, {}, expenses);
-    return;
-  }
-  setProfit(r.gross_revenue, r.total_expenses, r.net_profit, r.order_count, r.monthly, r.expenses);
-}
-
-function setProfit(gross, exp, net, count, monthly, expenses) {
-  document.getElementById('p-revenue').textContent  = '৳' + (gross || 0).toLocaleString();
-  document.getElementById('p-expenses').textContent = '৳' + (exp || 0).toLocaleString();
-  document.getElementById('p-profit').textContent   = '৳' + (net || 0).toLocaleString();
-  const profitEl = document.getElementById('p-profit');
-  profitEl.classList.toggle('negative', (net || 0) < 0);
-  document.getElementById('p-orders').textContent = count || 0;
-
-  // Monthly breakdown
-  const mb = document.getElementById('monthly-breakdown');
-  if (mb) {
-    const months = Object.entries(monthly || {}).sort((a,b) => b[0].localeCompare(a[0]));
-    mb.innerHTML = months.length ? months.map(([m,d]) => `
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px">
-        <span>${m}</span><span>${d.orders} orders</span><span style="color:var(--success)">৳${d.revenue.toLocaleString()}</span>
-      </div>
-    `).join('') : '<div style="color:var(--muted);font-size:12px">No data yet</div>';
-  }
-
-  // Expense log
-  const el = document.getElementById('expense-log');
-  if (el) {
-    const exps = (expenses || []).slice().reverse();
-    el.innerHTML = exps.length ? exps.map(e => `
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px">
-        <span>${e.description}</span>
-        <span style="color:var(--muted)">${e.category}</span>
-        <span style="color:var(--error)">৳${e.amount}</span>
-        <span style="color:var(--muted);font-size:10px">${e.date || ''}</span>
-      </div>
-    `).join('') : '<div class="empty"><div class="empty-icon">💸</div><div>No expenses logged.</div></div>';
-  }
-}
-
-async function logExpense() {
-  const desc   = document.getElementById('exp-desc').value.trim();
-  const amount = parseFloat(document.getElementById('exp-amount').value) || 0;
-  const cat    = document.getElementById('exp-cat').value;
-  if (!desc || !amount) { toast('Description and amount required', 'error'); return; }
-
-  const expense = { description: desc, amount, category: cat };
-
-  // Try server first
-  const r = await apiCall('/api/expenses', 'POST', expense);
-  if (!r) {
-    // Save locally
-    CLIENT.expenses = CLIENT.expenses || [];
-    CLIENT.expenses.push({ ...expense, id: Date.now().toString(), date: new Date().toLocaleString() });
-    saveClient();
-  }
-
-  document.getElementById('exp-desc').value = '';
-  document.getElementById('exp-amount').value = '';
-  toast('✅ Expense logged!', 'success');
-  loadProfit();
-}
-
-// ════════════════════════════════════
-// OCR SCANNER
-// ════════════════════════════════════
-function handleOCRUpload(input) {
-  const file = input.files[0];
-  if (!file) return;
-  if (file.size > 4*1024*1024) { toast('Image must be under 4MB', 'error'); return; }
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const dataUrl = e.target.result;
-    OCR_IMAGE_B64 = dataUrl.split(',')[1]; // base64 only
-    document.getElementById('ocr-img').src = dataUrl;
-    document.getElementById('ocr-preview').style.display = 'block';
-    document.getElementById('ocr-scan-btn-wrap').style.display = 'block';
-    document.getElementById('ocr-results-card').style.display = 'none';
-  };
-  reader.readAsDataURL(file);
-}
-
-function handleOCRDrop(event) {
-  event.preventDefault();
-  document.getElementById('ocr-drop').classList.remove('drag');
-  const file = event.dataTransfer.files[0];
-  if (file) {
-    const input = document.getElementById('ocr-file');
-    const dt = new DataTransfer();
-    dt.items.add(file);
-    input.files = dt.files;
-    handleOCRUpload(input);
-  }
-}
-
-async function runOCR() {
-  if (!OCR_IMAGE_B64) { toast('Upload an image first', 'error'); return; }
-  const visionKey = (CLIENT.apiKeys || {}).googleVisionKey;
-  const statusEl = document.getElementById('ocr-status');
-
-  if (visionKey) {
-    // Call via server (avoids CORS + keeps key server-side)
-    statusEl.textContent = '🔍 Scanning...';
-    const r = await apiCall('/api/ocr-scan', 'POST', { image: OCR_IMAGE_B64 });
-    if (!r) { statusEl.textContent = ''; return; }
-    OCR_DETECTED_PRODUCTS = r.products || [];
-    document.getElementById('ocr-raw-text').textContent = r.text || '';
-    document.getElementById('ocr-raw-card').style.display = 'block';
-  } else {
-    toast('Set Google Vision API key in Integrations to scan', 'warn');
-    statusEl.textContent = '⚠ Vision key not configured';
-    return;
-  }
-
-  statusEl.textContent = `Found ${OCR_DETECTED_PRODUCTS.length} products`;
-  renderOCRProducts();
-  document.getElementById('ocr-results-card').style.display = 'block';
-}
-
-function renderOCRProducts() {
-  const el = document.getElementById('ocr-product-list');
-  if (!el) return;
-  if (!OCR_DETECTED_PRODUCTS.length) {
-    el.innerHTML = '<div style="color:var(--muted);font-size:12px">No products detected. Try a clearer photo.</div>';
-    return;
-  }
-  el.innerHTML = OCR_DETECTED_PRODUCTS.map((p, i) => `
-    <div class="ocr-result-row">
-      <input type="checkbox" checked id="ocr-check-${i}" style="width:auto">
-      <input type="text" value="${p.name}" id="ocr-name-${i}" placeholder="Product name" style="padding:5px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px">
-      <input type="number" value="${p.price}" id="ocr-price-${i}" placeholder="Price" style="padding:5px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px">
-      <input type="number" value="${p.stock}" id="ocr-stock-${i}" placeholder="Stock" style="padding:5px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px">
-    </div>
-  `).join('') + '<div style="font-size:10px;color:var(--muted);margin-top:4px"># &nbsp; Name &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Price &nbsp;&nbsp; Stock</div>';
-}
-
-function importOCRProducts() {
-  CLIENT.inventory = CLIENT.inventory || [];
-  let added = 0, merged = 0;
-  OCR_DETECTED_PRODUCTS.forEach((_, i) => {
-    if (!document.getElementById(`ocr-check-${i}`)?.checked) return;
-    const name  = document.getElementById(`ocr-name-${i}`)?.value.trim();
-    const price = document.getElementById(`ocr-price-${i}`)?.value.trim();
-    const stock = parseInt(document.getElementById(`ocr-stock-${i}`)?.value) || 0;
-    if (!name) return;
-    const existing = CLIENT.inventory.find(p => p.name.toLowerCase() === name.toLowerCase());
-    if (existing) { existing.stock += stock; merged++; }
-    else { CLIENT.inventory.push({ name, price, details:'', stock }); added++; }
-  });
-  addHistory('OCR Import', `OCR import: ${added} new, ${merged} updated`);
-  saveClient();
-  renderInventory();
-  renderDashboard();
-  toast(`✅ Imported! ${added} new, ${merged} updated`, 'success');
-  document.getElementById('ocr-results-card').style.display = 'none';
-}
-
-// ════════════════════════════════════
-// BLACKLIST
-// ════════════════════════════════════
-function renderBlacklist() {
-  const el = document.getElementById('blacklist-list');
-  if (!el) return;
-  const bl = CLIENT.blacklist || [];
-  if (!bl.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">✅</div><div>No blocked numbers.</div></div>';
-    return;
-  }
-  el.innerHTML = bl.map(b => `
-    <div class="blacklist-row">
-      <span style="font-weight:600;font-family:monospace">${b.phone}</span>
-      <span style="color:var(--muted)">${b.reason || ''}</span>
-      <span style="font-size:10px;color:var(--muted)">${b.added_at || ''}</span>
-      <button class="btn btn-ghost btn-sm" style="color:var(--error)" onclick="removeBlacklist('${b.phone}')">Remove</button>
-    </div>
-  `).join('');
-}
-
-async function addBlacklist() {
-  const phone  = document.getElementById('bl-phone').value.trim().replace(/[^\d+]/g,'');
-  const reason = document.getElementById('bl-reason').value.trim();
-  if (!phone) { toast('Phone number required', 'error'); return; }
-
-  const entry = { phone, reason, added_at: new Date().toLocaleString() };
-  CLIENT.blacklist = CLIENT.blacklist || [];
-  if (!CLIENT.blacklist.find(b => b.phone === phone)) {
-    CLIENT.blacklist.push(entry);
-    saveClient();
-    // Sync to server
-    await apiCall('/api/blacklist', 'POST', entry);
-  }
-  document.getElementById('bl-phone').value = '';
-  document.getElementById('bl-reason').value = '';
-  renderBlacklist();
-  toast('✅ Number blocked', 'success');
-}
-
-async function removeBlacklist(phone) {
-  CLIENT.blacklist = (CLIENT.blacklist || []).filter(b => b.phone !== phone);
-  saveClient();
-  await apiCall('/api/blacklist', 'DELETE', { phone });
-  renderBlacklist();
-  toast('Removed from blacklist', 'success');
-}
-
-// ════════════════════════════════════
-// COLUMN SETTINGS
-// ════════════════════════════════════
-function openColModal() {
-  // Populate modal from COLS state
-  document.getElementById('cs-name').value    = COLS.name.label;
-  document.getElementById('cs-stock').value   = COLS.stock.label;
-  document.getElementById('cs-price').value   = COLS.price.label;
-  document.getElementById('cs-details').value = COLS.details.label;
-  document.getElementById('cs-extra1').value  = COLS.extra1.label;
-  document.getElementById('cs-extra2').value  = COLS.extra2.label;
-
-  ['stock','price','details','extra1','extra2'].forEach(k => {
-    const btn = document.getElementById('tog-' + k);
-    if (COLS[k].on) btn.classList.add('on'); else btn.classList.remove('on');
-  });
-
-  document.getElementById('col-modal').classList.add('open');
-}
-
-function closeColModal() {
-  document.getElementById('col-modal').classList.remove('open');
-}
-
-function toggleCol(key) {
-  COLS[key].on = !COLS[key].on;
-  const btn = document.getElementById('tog-' + key);
-  if (COLS[key].on) btn.classList.add('on'); else btn.classList.remove('on');
-}
-
-function applyPreset(name) {
-  const p = PRESETS[name];
-  document.getElementById('cs-name').value    = p.name;
-  document.getElementById('cs-stock').value   = p.stock;
-  document.getElementById('cs-price').value   = p.price;
-  document.getElementById('cs-details').value = p.details;
-  document.getElementById('cs-extra1').value  = p.extra1;
-  document.getElementById('cs-extra2').value  = p.extra2;
-
-  // Auto-enable extra cols if they have values
-  const tog1 = document.getElementById('tog-extra1');
-  const tog2 = document.getElementById('tog-extra2');
-  if (p.extra1) { tog1.classList.add('on'); COLS.extra1.on = true; }
-  else          { tog1.classList.remove('on'); COLS.extra1.on = false; }
-  if (p.extra2) { tog2.classList.add('on'); COLS.extra2.on = true; }
-  else          { tog2.classList.remove('on'); COLS.extra2.on = false; }
-}
-
-function saveColSettings() {
-  COLS.name.label    = document.getElementById('cs-name').value.trim()    || 'Product Name';
-  COLS.stock.label   = document.getElementById('cs-stock').value.trim()   || 'Stock';
-  COLS.price.label   = document.getElementById('cs-price').value.trim()   || 'Price';
-  COLS.details.label = document.getElementById('cs-details').value.trim() || 'Category';
-  COLS.extra1.label  = document.getElementById('cs-extra1').value.trim();
-  COLS.extra2.label  = document.getElementById('cs-extra2').value.trim();
-
-  ['stock','price','details','extra1','extra2'].forEach(k => {
-    COLS[k].on = document.getElementById('tog-' + k).classList.contains('on');
-  });
-
-  // Persist in client data
-  if (CLIENT) { CLIENT.cols = COLS; saveClient(); }
-
-  applyColsToUI();
-  closeColModal();
-  toast('✅ Column settings saved!', 'success');
-}
-
-function applyColsToUI() {
-  // Update manual add form labels & visibility
-  document.getElementById('lbl-name').textContent    = COLS.name.label;
-  document.getElementById('lbl-stock').textContent   = COLS.stock.label;
-  document.getElementById('lbl-price').textContent   = COLS.price.label;
-  document.getElementById('lbl-details').textContent = COLS.details.label;
-  document.getElementById('lbl-extra1').textContent  = COLS.extra1.label || 'Extra 1';
-  document.getElementById('lbl-extra2').textContent  = COLS.extra2.label || 'Extra 2';
-
-  document.getElementById('wrap-price').style.display   = COLS.price.on   ? '' : 'none';
-  document.getElementById('wrap-details').style.display = COLS.details.on ? '' : 'none';
-  document.getElementById('wrap-stock').style.display   = COLS.stock.on   ? '' : 'none';
-  document.getElementById('wrap-extra1').style.display  = COLS.extra1.on  ? '' : 'none';
-  document.getElementById('wrap-extra2').style.display  = COLS.extra2.on  ? '' : 'none';
-
-  // Update inventory table header
-  let ths = `<tr><th>#</th><th>${COLS.name.label}</th>`;
-  if (COLS.details.on) ths += `<th>${COLS.details.label}</th>`;
-  if (COLS.price.on)   ths += `<th>${COLS.price.label}</th>`;
-  if (COLS.stock.on)   ths += `<th>${COLS.stock.label}</th>`;
-  if (COLS.extra1.on && COLS.extra1.label) ths += `<th>${COLS.extra1.label}</th>`;
-  if (COLS.extra2.on && COLS.extra2.label) ths += `<th>${COLS.extra2.label}</th>`;
-  ths += `<th>Status</th><th>Actions</th></tr>`;
-  document.getElementById('inv-thead').innerHTML = ths;
-
-  // Update dashboard table header
-  let dashThs = `<tr><th>${COLS.name.label}</th>`;
-  if (COLS.details.on) dashThs += `<th>${COLS.details.label}</th>`;
-  if (COLS.stock.on)   dashThs += `<th>${COLS.stock.label}</th>`;
-  dashThs += `<th>Status</th></tr>`;
-  document.querySelector('#tab-dashboard table thead').innerHTML = dashThs;
-
-  // Re-render tables
-  renderInventory();
-  renderDashboard();
-}
-
-// ════════════════════════════════════
-// TOAST
-// ════════════════════════════════════
-function toast(msg, type = 'success') {
-  const t = document.createElement('div');
-  t.className = `toast toast-${type === 'error' ? 'error' : type === 'warn' ? 'warn' : 'success'}`;
-  t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3000);
-}
-
-// ════════════════════════════════════
-// AUTO-LOGIN (remembered session)
-// ════════════════════════════════════
-window.addEventListener('load', () => {
-  // No auto-login — always show login screen fresh for security
-});
 </script>
 </body>
 </html>
